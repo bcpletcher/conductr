@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Mission Control design tokens ── */
+
+  /* Backgrounds */
+  --color-base:    #0a0a0f;
+  --color-surface: #12121a;
+  --color-card:    #16161f;
+  --color-border:  #1e1e2e;
+
+  /* Accent palette */
+  --color-accent:        #6366f1;
+  --color-accent-indigo: #6366f1;
+  --color-accent-green:  #22c55e;
+  --color-accent-orange: #f97316;
+  --color-accent-red:    #ef4444;
+  --color-accent-blue:   #3b82f6;
+
+  /* Text */
+  --color-text-primary: #e2e8f0;
+  --color-text-muted:   #64748b;
+  --color-text-dim:     #475569;
+
+  /* Typography — SF Pro on macOS, falls back gracefully */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+
+  /* Border radius */
+  --radius-card: 8px;
+}
+
+/* ── Custom utilities ── */
+@utility w-sidebar {
+  width: 200px;
+}
+
+/* ── Base resets & global styles ── */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--color-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2a2a3e;
+  }
+}
+
+/* ── Component classes ── */
+@layer components {
+  .card {
+    @apply bg-card border border-border rounded-card;
+  }
+
+  .btn-primary {
+    @apply bg-accent-indigo hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-ghost {
+    @apply text-text-muted hover:text-text-primary text-sm transition-colors;
+  }
+
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted
+           hover:text-text-primary hover:bg-surface transition-colors cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply bg-surface text-text-primary;
+  }
+
+  .page-header {
+    @apply mb-6;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold text-text-primary;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-text-muted mt-1;
+  }
+
+  /* macOS window drag regions */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
