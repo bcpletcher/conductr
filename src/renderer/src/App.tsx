@@ -38,10 +38,10 @@ export default function App(): React.JSX.Element {
   const PageComponent = PAGE_MAP[currentPage]
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-base">
+    <div className="flex h-screen w-screen overflow-hidden bg-base" data-testid="app">
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 flex flex-col overflow-hidden" data-testid="main-content">
+        <div className="flex-1 overflow-y-auto p-6" data-testid={`page-${currentPage}`}>
           <PageComponent />
         </div>
       </main>

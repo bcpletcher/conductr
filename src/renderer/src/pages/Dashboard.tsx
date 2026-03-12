@@ -6,9 +6,9 @@ import type { TaskCounts, ActivityLogEntry, Document } from '../env.d'
 const api = window.electronAPI
 
 const QUICK_LINKS = [
-  { label: 'Workshop', icon: '⚙️', page: 'workshop' },
-  { label: 'Client Intelligence', icon: '🧠', page: 'intelligence' },
-  { label: 'API Metrics', icon: '📊', page: 'metrics' }
+  { label: 'Workshop', icon: 'fa-solid fa-gears', page: 'workshop' },
+  { label: 'Client Intelligence', icon: 'fa-solid fa-brain', page: 'intelligence' },
+  { label: 'API Metrics', icon: 'fa-solid fa-chart-bar', page: 'metrics' }
 ]
 
 export default function Dashboard(): React.JSX.Element {
@@ -36,11 +36,11 @@ export default function Dashboard(): React.JSX.Element {
   }, [])
 
   return (
-    <div>
+    <div data-testid="dashboard-page">
       {/* Header */}
       <div className="page-header flex items-start justify-between">
         <div>
-          <h1 className="page-title">Mission Control</h1>
+          <h1 className="page-title">Orqis</h1>
           <p className="page-subtitle">Real-time overview of all systems</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -51,14 +51,14 @@ export default function Dashboard(): React.JSX.Element {
 
       {/* Status cards row */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Queued" value={counts.queued} icon="📋" />
-        <MetricCard label="Active" value={counts.active} accent="blue" icon="⚡" />
-        <MetricCard label="Completed" value={counts.complete} accent="green" icon="✅" />
+        <MetricCard label="Queued" value={counts.queued} icon="fa-solid fa-clipboard-list" />
+        <MetricCard label="Active" value={counts.active} accent="blue" icon="fa-solid fa-bolt" />
+        <MetricCard label="Completed" value={counts.complete} accent="green" icon="fa-solid fa-circle-check" />
         <MetricCard
           label="Today's Spend"
           value={`$${todaySpend.toFixed(4)}`}
           accent="orange"
-          icon="💸"
+          icon="fa-solid fa-dollar-sign"
         />
       </div>
 
@@ -113,7 +113,7 @@ export default function Dashboard(): React.JSX.Element {
                       {new Date(doc.created_at).toLocaleDateString()}
                     </div>
                   </div>
-                  <span className="text-text-muted text-xs">→</span>
+                  <i className="fa-solid fa-arrow-right text-text-muted text-xs" />
                 </div>
               ))}
             </div>
@@ -129,11 +129,11 @@ export default function Dashboard(): React.JSX.Element {
             {QUICK_LINKS.map((link) => (
               <button
                 key={link.page}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-border/50 text-sm text-text-primary transition-colors text-left"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.04] text-sm text-text-primary transition-all text-left"
               >
-                <span>{link.icon}</span>
+                <i className={`${link.icon} text-sm`} />
                 <span>{link.label}</span>
-                <span className="ml-auto text-text-muted">→</span>
+                <i className="fa-solid fa-arrow-right ml-auto text-text-muted text-xs" />
               </button>
             ))}
           </div>

@@ -22,7 +22,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
     <div className="flex-1 p-6 overflow-y-auto">
       {/* Avatar + name */}
       <div className="flex items-start gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-3xl flex-shrink-0">
+        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
           {agent.avatar}
         </div>
         <div className="flex-1">
@@ -42,7 +42,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
             Hidden Directives
           </h3>
-          <div className="bg-base border border-border rounded-lg p-4 text-sm text-text-primary leading-relaxed">
+          <div className="glass-surface rounded-lg p-4 text-sm text-text-primary leading-relaxed">
             {agent.system_directive}
           </div>
         </div>
@@ -54,7 +54,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
             Operational Role
           </h3>
-          <div className="bg-base border border-border rounded-lg p-4 text-sm text-text-primary leading-relaxed">
+          <div className="glass-surface rounded-lg p-4 text-sm text-text-primary leading-relaxed">
             {agent.operational_role}
           </div>
         </div>
@@ -65,7 +65,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Activity History
         </h3>
-        <div className="bg-base border border-border rounded-lg p-3">
+        <div className="glass-surface rounded-lg p-3">
           <ActivityFeed entries={log} maxHeight="200px" />
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function Agents(): React.JSX.Element {
   }
 
   return (
-    <div>
+    <div data-testid="agents-page">
       <div className="page-header flex items-start justify-between">
         <div>
           <h1 className="page-title">Agents</h1>

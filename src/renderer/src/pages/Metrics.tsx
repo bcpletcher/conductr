@@ -55,7 +55,7 @@ export default function Metrics(): React.JSX.Element {
   }))
 
   return (
-    <div>
+    <div data-testid="metrics-page">
       <div className="page-header">
         <h1 className="page-title">API Usage & Metrics</h1>
         <p className="page-subtitle">Real-time financial and token intelligence</p>
@@ -66,23 +66,23 @@ export default function Metrics(): React.JSX.Element {
         <MetricCard
           label="Today's Spend"
           value={`$${todaySpend.toFixed(4)}`}
-          icon="💸"
+          icon="fa-solid fa-dollar-sign"
           accent="orange"
         />
         <MetricCard
           label="7-Day Billing"
           value={`$${sevenDayTotal.toFixed(4)}`}
           subtitle="Past 7 days"
-          icon="📅"
+          icon="fa-solid fa-calendar-days"
           accent="blue"
         />
         <MetricCard
           label="Monthly Tokens"
           value={tokens.total_tokens.toLocaleString()}
           subtitle={`${tokens.input_tokens.toLocaleString()} in / ${tokens.output_tokens.toLocaleString()} out`}
-          icon="🔢"
+          icon="fa-solid fa-hashtag"
         />
-        <MetricCard label="Top Model" value={activeModel} icon="🤖" />
+        <MetricCard label="Top Model" value={activeModel} icon="fa-solid fa-robot" />
       </div>
 
       {/* 7-day chart */}
@@ -95,7 +95,7 @@ export default function Metrics(): React.JSX.Element {
         ) : (
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2e" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="date"
                 tick={{ fill: '#64748b', fontSize: 11 }}
@@ -110,9 +110,11 @@ export default function Metrics(): React.JSX.Element {
               />
               <Tooltip
                 contentStyle={{
-                  background: '#16161f',
-                  border: '1px solid #1e1e2e',
-                  borderRadius: 8,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 12,
                   color: '#e2e8f0',
                   fontSize: 12
                 }}
@@ -146,7 +148,7 @@ export default function Metrics(): React.JSX.Element {
             </thead>
             <tbody>
               {usageRows.map((row) => (
-                <tr key={row.id} className="border-b border-border/50 hover:bg-surface/50">
+                <tr key={row.id} className="border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors">
                   <td className="px-5 py-3 text-text-primary truncate max-w-xs">
                     {row.task_title || '—'}
                   </td>

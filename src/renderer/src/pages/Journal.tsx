@@ -1,6 +1,6 @@
 export default function Journal(): React.JSX.Element {
   return (
-    <div>
+    <div data-testid="journal-page">
       <div className="page-header">
         <h1 className="page-title">Journal</h1>
         <p className="page-subtitle">Session log and decision history</p>

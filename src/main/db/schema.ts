@@ -12,7 +12,7 @@ export function getDb(): Database.Database {
 }
 
 export function initDb(): Database.Database {
-  const dbPath = path.join(app.getPath('userData'), 'mission-control.db')
+  const dbPath = path.join(app.getPath('userData'), 'orqis.db')
   db = new Database(dbPath)
 
   db.pragma('journal_mode = WAL')
@@ -92,18 +92,18 @@ function createTables(db: Database.Database): void {
 }
 
 function seedDefaults(db: Database.Database): void {
-  const novaExists = db
+  const lyraExists = db
     .prepare('SELECT id FROM agents WHERE id = ?')
-    .get('agent-nova')
+    .get('agent-lyra')
 
-  if (!novaExists) {
+  if (!lyraExists) {
     db.prepare(`
       INSERT INTO agents (id, name, avatar, system_directive, operational_role, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(
-      'agent-nova',
-      'Nova',
-      '💪',
+      'agent-lyra',
+      'Lyra',
+      '✦',
       'To provide the user with ultimate leverage through autonomous intelligence swarms.',
       'Lead intelligence and commander of the centre. Responsible for delegating high-thrust objectives and ensuring mission success for the channel.',
       new Date().toISOString()

@@ -13,7 +13,7 @@ export default function Documents(): React.JSX.Element {
   }, [])
 
   return (
-    <div>
+    <div data-testid="documents-page">
       <div className="page-header flex items-start justify-between">
         <div>
           <h1 className="page-title">Documents</h1>
@@ -28,7 +28,7 @@ export default function Documents(): React.JSX.Element {
       ) : (
         <div className="space-y-2">
           {documents.map((doc) => (
-            <div key={doc.id} className="card p-4 hover:border-border/80 cursor-pointer transition-colors">
+            <div key={doc.id} className="card p-4 cursor-pointer transition-all hover:bg-white/[0.06]">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-medium text-text-primary">{doc.title}</div>
@@ -36,7 +36,7 @@ export default function Documents(): React.JSX.Element {
                     {new Date(doc.created_at).toLocaleDateString()}
                   </div>
                 </div>
-                <span className="text-text-muted text-sm">→</span>
+                <i className="fa-solid fa-arrow-right text-text-muted text-sm" />
               </div>
             </div>
           ))}

@@ -38,7 +38,8 @@ export default function TaskCard({ task, onClick, onStart }: TaskCardProps): Rea
 
   return (
     <div
-      className="card p-4 hover:border-border/80 cursor-pointer transition-colors group"
+      data-testid="task-card"
+      className="card p-4 cursor-pointer transition-all group hover:bg-white/[0.06]"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-4">
@@ -92,7 +93,7 @@ export default function TaskCard({ task, onClick, onStart }: TaskCardProps): Rea
             }}
             className="flex-shrink-0 btn-primary whitespace-nowrap text-xs px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            Start →
+            Start <i className="fa-solid fa-arrow-right ml-1" />
           </button>
         )}
       </div>

@@ -15,14 +15,14 @@ export default function AgentCard({
 }: AgentCardProps): React.JSX.Element {
   return (
     <div
-      className={`card p-4 cursor-pointer hover:border-accent/40 transition-colors ${
-        selected ? 'border-accent/60 bg-accent/5' : ''
+      className={`card p-4 cursor-pointer transition-all ${
+        selected ? 'border-accent/60 bg-accent/5' : 'hover:bg-white/[0.06]'
       }`}
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-xl flex-shrink-0 border border-border">
+        <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-xl flex-shrink-0 border border-white/[0.06]">
           {agent.avatar}
         </div>
 

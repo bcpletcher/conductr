@@ -1,6 +1,6 @@
 export default function Clients(): React.JSX.Element {
   return (
-    <div>
+    <div data-testid="clients-page">
       <div className="page-header">
         <h1 className="page-title">Clients</h1>
         <p className="page-subtitle">Client-specific project tracking</p>

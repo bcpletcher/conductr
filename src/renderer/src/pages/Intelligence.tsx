@@ -1,6 +1,6 @@
 export default function Intelligence(): React.JSX.Element {
   return (
-    <div>
+    <div data-testid="intelligence-page">
       <div className="page-header">
         <h1 className="page-title">Intelligence</h1>
         <p className="page-subtitle">AI-generated insights and analysis</p>

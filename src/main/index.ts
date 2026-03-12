@@ -46,11 +46,11 @@ function createWindow(): void {
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'Mission Control',
+      label: 'Orqis',
       submenu: [
-        { label: 'About Mission Control', role: 'about' },
+        { label: 'About Orqis', role: 'about' },
         { type: 'separator' },
-        { label: 'Hide Mission Control', role: 'hide' },
+        { label: 'Hide Orqis', role: 'hide' },
         { label: 'Hide Others', role: 'hideOthers' },
         { label: 'Show All', role: 'unhide' },
         { type: 'separator' },
@@ -97,7 +97,7 @@ function buildMenu(): void {
       submenu: [
         {
           label: 'Documentation',
-          click: () => shell.openExternal('https://github.com/you/mission-control')
+          click: () => shell.openExternal('https://github.com/you/orqis')
         }
       ]
     }

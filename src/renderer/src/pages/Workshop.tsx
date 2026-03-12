@@ -65,7 +65,7 @@ function TaskDetail({ task, agents, onClose }: TaskDetailProps): React.JSX.Eleme
             disabled={running}
             className="btn-primary disabled:opacity-50"
           >
-            {running ? 'Running…' : 'Start Task →'}
+            {running ? 'Running…' : <><span>Start Task</span> <i className="fa-solid fa-arrow-right ml-1" /></>}
           </button>
         )}
       </div>
@@ -130,7 +130,7 @@ function TaskDetail({ task, agents, onClose }: TaskDetailProps): React.JSX.Eleme
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
           Activity Log
         </h3>
-        <div className="bg-base rounded-lg p-3 border border-border">
+        <div className="glass-surface rounded-lg p-3">
           <ActivityFeed entries={log} maxHeight="300px" autoScroll />
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function Workshop(): React.JSX.Element {
   }
 
   return (
-    <div>
+    <div data-testid="workshop-page">
       {/* Header */}
       <div className="page-header flex items-start justify-between">
         <div>
