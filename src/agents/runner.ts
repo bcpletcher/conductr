@@ -12,7 +12,7 @@ export async function runTask(
   taskId: string,
   onLog: LogCallback,
   onProgress: ProgressCallback
-): Promise<void> {
+): Promise<{ content: string }> {
   const task = getTaskById(taskId)
   if (!task) throw new Error(`Task ${taskId} not found`)
 
@@ -93,4 +93,6 @@ export async function runTask(
   updateTaskStatus(taskId, 'complete', 100)
   onLog(`✓ Task complete. Tokens used: ${result.inputTokens + result.outputTokens} | Cost: $${result.costUsd.toFixed(6)}`)
   onProgress(100)
+
+  return { content: result.content }
 }

@@ -5,7 +5,7 @@ import rehypeHighlight from 'rehype-highlight'
 import type { Components } from 'react-markdown'
 import mermaid from 'mermaid'
 
-// Initialise Mermaid once at module scope (dark theme matching Dispatchr)
+// Initialise Mermaid once at module scope (dark theme matching Conductr)
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',

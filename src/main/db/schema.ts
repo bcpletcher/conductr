@@ -12,7 +12,7 @@ export function getDb(): Database.Database {
 }
 
 export function initDb(): Database.Database {
-  const dbPath = path.join(app.getPath('userData'), 'dispatchr.db')
+  const dbPath = path.join(app.getPath('userData'), 'conductr.db')
   db = new Database(dbPath)
 
   db.pragma('journal_mode = WAL')
@@ -102,7 +102,44 @@ function createTables(db: Database.Database): void {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      entry_type TEXT DEFAULT 'manual',
+      task_id TEXT,
+      agent_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      FOREIGN KEY (task_id) REFERENCES tasks(id),
+      FOREIGN KEY (agent_id) REFERENCES agents(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS intelligence_insights (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      insight_type TEXT NOT NULL,
+      period_start TEXT,
+      period_end TEXT,
+      agent_ids TEXT DEFAULT '[]',
+      task_ids TEXT DEFAULT '[]',
+      is_read INTEGER DEFAULT 0,
+      generated_at TEXT NOT NULL
+    );
   `)
+
+  // Phase 5 migrations — add columns to documents table
+  const docMigrations = [
+    `ALTER TABLE documents ADD COLUMN tags TEXT DEFAULT '[]'`,
+    `ALTER TABLE documents ADD COLUMN agent_id TEXT`,
+    `ALTER TABLE documents ADD COLUMN doc_type TEXT DEFAULT 'output'`,
+    `ALTER TABLE documents ADD COLUMN updated_at TEXT`,
+  ]
+  for (const sql of docMigrations) {
+    try { db.exec(sql) } catch { /* column already exists */ }
+  }
 }
 
 const DEFAULT_AGENTS = [

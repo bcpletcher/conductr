@@ -67,7 +67,44 @@ export interface Document {
   title: string
   content: string | null
   task_id: string | null
+  agent_id: string | null
   client_id: string | null
+  tags: string        // JSON array string
+  doc_type: string    // 'output' | 'recap' | 'manual'
+  created_at: string
+  updated_at: string | null
+}
+
+export interface JournalEntry {
+  id: string
+  date: string
+  title: string
+  content: string
+  entry_type: 'manual' | 'task_complete' | 'recap' | 'system'
+  task_id: string | null
+  agent_id: string | null
+  created_at: string
+  updated_at: string | null
+  task_title?: string
+  agent_name?: string
+}
+
+export interface IntelligenceInsight {
+  id: string
+  content: string
+  insight_type: 'pattern' | 'anomaly' | 'recommendation' | 'recap'
+  period_start: string | null
+  period_end: string | null
+  agent_ids: string   // JSON array string
+  task_ids: string    // JSON array string
+  is_read: number     // 0 | 1
+  generated_at: string
+}
+
+export interface Client {
+  id: string
+  name: string
+  description: string | null
   created_at: string
 }
 
@@ -137,6 +174,70 @@ declare global {
         onDone: (cb: (data: { agentId: string; message: Message }) => void) => void
         onError: (cb: (data: { agentId: string; error: string }) => void) => void
         removeAllListeners: () => void
+      }
+      documents: {
+        getAll: (limit?: number) => Promise<Document[]>
+        getById: (id: string) => Promise<Document | null>
+        create: (input: Partial<Document>) => Promise<Document>
+        delete: (id: string) => Promise<void>
+        search: (query: string) => Promise<Document[]>
+        getByTag: (tag: string) => Promise<Document[]>
+        getByTask: (taskId: string) => Promise<Document[]>
+        getByAgent: (agentId: string) => Promise<Document[]>
+        onCreated: (cb: (data: { document: Document }) => void) => void
+        removeCreatedListener: () => void
+      }
+      journal: {
+        getAll: (limit?: number) => Promise<JournalEntry[]>
+        getByDate: (date: string) => Promise<JournalEntry[]>
+        create: (input: Partial<JournalEntry>) => Promise<JournalEntry>
+        update: (id: string, content: string) => Promise<JournalEntry>
+        delete: (id: string) => Promise<void>
+        search: (query: string) => Promise<JournalEntry[]>
+      }
+      intelligence: {
+        getAll: (limit?: number) => Promise<IntelligenceInsight[]>
+        getUnread: () => Promise<IntelligenceInsight[]>
+        markRead: (id: string) => Promise<void>
+        markAllRead: () => Promise<void>
+        delete: (id: string) => Promise<void>
+        generate: (type: 'insight' | 'recap') => void
+        onChunk: (cb: (data: { chunk: string }) => void) => void
+        onDone: (cb: (data: { insight: IntelligenceInsight }) => void) => void
+        onError: (cb: (data: { error: string }) => void) => void
+        removeAllListeners: () => void
+      }
+      clients: {
+        getAll: () => Promise<Client[]>
+        getById: (id: string) => Promise<Client | null>
+        create: (input: { name: string; description?: string }) => Promise<Client>
+        update: (id: string, input: { name?: string; description?: string }) => Promise<Client>
+        delete: (id: string) => Promise<void>
+        getTaskCount: (clientId: string) => Promise<number>
+        getDocCount: (clientId: string) => Promise<number>
+        getTasks: (clientId: string) => Promise<Task[]>
+        getDocuments: (clientId: string) => Promise<Document[]>
+        getActivityLog: (clientId: string, limit?: number) => Promise<ActivityLogEntry[]>
+      }
+      settings: {
+        get: (key: string) => Promise<string | null>
+        set: (key: string, value: string) => Promise<boolean>
+        pickWallpaper: () => Promise<string | null>
+      }
+      app: {
+        /** Current OS platform string, e.g. 'darwin' | 'win32' | 'linux' */
+        platform: string
+        onOpenShortcutSheet: (cb: () => void) => void
+        removeShortcutSheetListener: () => void
+        /** Fired when the user picks a page from the system tray / menu-bar menu */
+        onTrayNavigate: (cb: (page: string) => void) => void
+        removeTrayNavigateListener: () => void
+      }
+      /** Custom window controls — used by renderer on Windows (frame is hidden) */
+      window: {
+        minimize: () => void
+        maximize: () => void
+        close: () => void
       }
     }
   }

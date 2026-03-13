@@ -59,7 +59,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
-  ::selection { background: rgba(139,124,248,0.35); color: #eef0f8; }
+  ::selection { background: var(--color-accent-border, rgba(139,124,248,0.28)); color: #eef0f8; }
 }
 
 /* ── Components ── */
@@ -101,18 +101,18 @@
 
   .card-accent {
     background: linear-gradient(135deg,
-      rgba(139, 124, 248, 0.14) 0%,
+      var(--color-accent-subtle, rgba(139,124,248,0.15)) 0%,
       rgba(255, 255, 255, 0.03) 55%
     );
     -webkit-backdrop-filter: blur(32px) saturate(1.6);
     backdrop-filter: blur(32px) saturate(1.6);
-    border: 1px solid rgba(139, 124, 248, 0.22);
-    border-top-color: rgba(139, 124, 248, 0.32);
+    border: 1px solid var(--color-accent-muted, rgba(139,124,248,0.22));
+    border-top-color: var(--color-accent-border, rgba(139,124,248,0.28));
     border-radius: var(--radius-card);
     box-shadow:
-      inset 0 1px 0 rgba(139,124,248,0.12),
+      inset 0 1px 0 var(--color-accent-glow, rgba(139,124,248,0.12)),
       0 4px 24px rgba(0,0,0,0.38),
-      0 0 48px rgba(139,124,248,0.08);
+      0 0 48px var(--color-accent-glow, rgba(139,124,248,0.12));
   }
 
   /* ── Buttons ── */
@@ -152,6 +152,8 @@
     @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all cursor-pointer;
     color: rgba(255, 255, 255, 0.38);
     font-weight: 450;
+    /* Reserve border space on inactive items to prevent layout shift when active */
+    border: 1px solid transparent;
   }
   .nav-item:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -160,15 +162,15 @@
   .nav-item.active {
     color: #fff;
     font-weight: 500;
-    background: rgba(139, 124, 248, 0.22);
-    border: 1px solid rgba(139, 124, 248, 0.28);
+    background: var(--color-accent-muted, rgba(139,124,248,0.22));
+    border-color: var(--color-accent-border, rgba(139,124,248,0.28));
     box-shadow:
-      inset 0 1px 0 rgba(139,124,248,0.18),
-      0 0 20px rgba(139,124,248,0.12);
+      inset 0 1px 0 var(--color-accent-subtle, rgba(139,124,248,0.18)),
+      0 0 20px var(--color-accent-glow, rgba(139,124,248,0.12));
   }
   .nav-item.active i {
-    color: #b4abfa;
-    filter: drop-shadow(0 0 5px rgba(139,124,248,0.70));
+    color: var(--color-accent);
+    filter: drop-shadow(0 0 5px var(--color-accent-border, rgba(139,124,248,0.70)));
   }
 
   /* ── Nav section label ── */
@@ -185,8 +187,13 @@
 
   /* ── Layout ── */
   .page-header { @apply mb-6; }
-  .page-title { @apply text-xl font-semibold tracking-tight; color: var(--color-text-primary); }
-  .page-subtitle { @apply text-sm mt-1; color: var(--color-text-muted); }
+  .page-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #eef0f8;
+  }
+  .page-subtitle { @apply text-sm mt-1; color: rgba(255, 255, 255, 0.36); }
 
   .section-label {
     font-size: 10px;
@@ -206,9 +213,9 @@
   .input::placeholder { color: rgba(255,255,255,0.28); }
   .input:focus {
     outline: none;
-    border-color: rgba(139,124,248,0.48);
+    border-color: var(--color-accent-focus, rgba(139,124,248,0.48));
     background: rgba(255,255,255,0.07);
-    box-shadow: 0 0 0 3px rgba(139,124,248,0.12);
+    box-shadow: 0 0 0 3px var(--color-accent-glow, rgba(139,124,248,0.12));
   }
 
   select.input {
@@ -235,3 +242,32 @@
   .drag-region { -webkit-app-region: drag; }
   .no-drag { -webkit-app-region: no-drag; }
 }
+
+/* ── Animations ── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes palette-drop {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Density ── */
+:root {
+  --page-pad: 1.5rem;   /* comfortable = p-6 */
+}
+
+html[data-density="compact"] {
+  font-size: 93.75%;    /* 15px base — all rem spacing scales down */
+  --page-pad: 0.875rem; /* 14px page padding */
+}
+
+html[data-density="compact"] .page-header { margin-bottom: 1rem; }
+html[data-density="compact"] .page-title  { font-size: 19px; }

@@ -85,7 +85,7 @@ export default function MetricCard({
         {value}
       </div>
       {subtitle && (
-        <div className="text-xs mt-1" style={{ color: '#5c6285' }}>{subtitle}</div>
+        <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.36)' }}>{subtitle}</div>
       )}
     </div>
   )

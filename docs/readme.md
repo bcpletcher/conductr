@@ -1,4 +1,4 @@
-# Dispatchr
+# Conductr
 
 > Single AI operations layer — replacing Claude Desktop, ChatGPT, Codex, and Cursor. Manage, direct, and ship work through a team of specialized AI agents without switching apps.
 

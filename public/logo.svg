@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Deep purple-black background -->
+    <linearGradient id="bg" x1="30%" y1="5%" x2="70%" y2="95%">
+      <stop offset="0%"   stop-color="#1c1040"/>
+      <stop offset="100%" stop-color="#06050d"/>
+    </linearGradient>
+
+    <!-- Central ambient glow (violet orb) -->
+    <radialGradient id="glow" cx="50%" cy="60%" r="50%">
+      <stop offset="0%"   stop-color="#6d28d9" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6d28d9" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Upper specular highlight (Apple-style sheen) -->
+    <radialGradient id="sheen" cx="38%" cy="18%" r="42%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Dot inner glow -->
+    <radialGradient id="dotglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="60%"  stop-color="#e0d7ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ─── Background circle ─────────────────────────────────── -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- Ambient glow orb -->
+  <ellipse cx="256" cy="295" rx="195" ry="180" fill="url(#glow)"/>
+
+  <!-- Apple-style specular sheen (top-left catch light) -->
+  <ellipse cx="205" cy="155" rx="170" ry="130" fill="url(#sheen)"/>
+
+  <!-- Rim highlight -->
+  <circle cx="256" cy="256" r="250" fill="none"
+          stroke="rgba(196,181,253,0.13)" stroke-width="5"/>
+
+  <!-- ─── Conductor waves ───────────────────────────────────── -->
+  <!-- Origin / focal point at (256, 368)                        -->
+  <!-- Arcs are upper semicircles (sweep-flag=1 = clockwise)     -->
+
+  <!-- Arc 4 — outermost, faintest indigo -->
+  <path d="M  86 368 A 170 170 0 0 1 426 368"
+        fill="none" stroke="#5b21b6" stroke-width="9"
+        stroke-linecap="round" opacity="0.22"/>
+
+  <!-- Arc 3 — wide violet -->
+  <path d="M 124 368 A 132 132 0 0 1 388 368"
+        fill="none" stroke="#7c3aed" stroke-width="11"
+        stroke-linecap="round" opacity="0.40"/>
+
+  <!-- Arc 2 — medium lavender -->
+  <path d="M 164 368 A  92  92 0 0 1 348 368"
+        fill="none" stroke="#c4b5fd" stroke-width="13"
+        stroke-linecap="round" opacity="0.65"/>
+
+  <!-- Arc 1 — innermost, bright white -->
+  <path d="M 204 368 A  52  52 0 0 1 308 368"
+        fill="none" stroke="#ffffff" stroke-width="15"
+        stroke-linecap="round" opacity="0.90"/>
+
+  <!-- ─── Focal point (the conductor) ─────────────────────── -->
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="368" r="32" fill="none"
+          stroke="rgba(196,181,253,0.18)" stroke-width="3"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="368" r="24" fill="none"
+          stroke="rgba(255,255,255,0.28)" stroke-width="3"/>
+  <!-- Solid dot -->
+  <circle cx="256" cy="368" r="16" fill="url(#dotglow)"/>
+</svg>

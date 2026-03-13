@@ -1,5 +1,5 @@
-appId: com.dispatchr.app
-productName: Dispatchr
+appId: com.conductr.app
+productName: Conductr
 copyright: Copyright © 2024
 
 directories:
@@ -20,8 +20,17 @@ mac:
   darkModeSupport: true
   minimumSystemVersion: '12.0'
 
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - arm64
+  icon: public/icon.ico
+  requestedExecutionLevel: asInvoker
+
 dmg:
-  title: Dispatchr
+  title: Conductr
   window:
     width: 540
     height: 380
@@ -29,5 +38,8 @@ dmg:
 nsis:
   oneClick: false
   perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 
 publish: null

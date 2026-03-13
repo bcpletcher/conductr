@@ -1,15 +1,17 @@
 {
-  "name": "dispatchr",
+  "name": "conductr",
   "version": "0.1.0",
-  "description": "Dispatchr — autonomous AI dispatch and orchestration platform",
+  "description": "Conductr — autonomous AI orchestration platform",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "build:mac": "npm run build && electron-builder --mac",
+    "build:win": "npm run build && electron-builder --win",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && npx playwright test"
+    "test": "npm run build && npx playwright test",
+    "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

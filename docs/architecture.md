@@ -1,8 +1,8 @@
-# 🏗️ Dispatchr — Architecture
+# 🏗️ Conductr — Architecture
 
 ## Overview
 
-Dispatchr is a local-first Mac desktop application that aims to be the **single AI operations layer** — replacing Claude Desktop, Codex, ChatGPT, and every other AI tool with one unified command centre. All data is stored on-device in SQLite. Multiple LLM providers are supported. All state, history, agent memories, and cost data lives locally — no cloud dependency, no vendor lock-in.
+Conductr is a local-first Mac desktop application that aims to be the **single AI operations layer** — replacing Claude Desktop, Codex, ChatGPT, and every other AI tool with one unified command centre. All data is stored on-device in SQLite. Multiple LLM providers are supported. All state, history, agent memories, and cost data lives locally — no cloud dependency, no vendor lock-in.
 
 ---
 
@@ -45,7 +45,7 @@ Dispatchr is a local-first Mac desktop application that aims to be the **single 
 ## Folder Structure
 
 ```
-dispatchr/
+conductr/
 │
 ├── src/
 │   ├── main/                        # Electron main process (Node.js)
@@ -151,7 +151,7 @@ dispatchr/
 
 ---
 
-## Data Model (SQLite — `dispatchr.db`)
+## Data Model (SQLite — `conductr.db`)
 
 ### Current Tables
 
@@ -412,7 +412,7 @@ All API keys and secrets live in the main process only — never passed to the r
 
 ## Agent Architecture
 
-Dispatchr uses a **named agent model**. Each agent has a persona, system directive, operational role, LLM provider/model override, and specialization. The system ships with 7 default agents but supports **unlimited custom agents**.
+Conductr uses a **named agent model**. Each agent has a persona, system directive, operational role, LLM provider/model override, and specialization. The system ships with 7 default agents but supports **unlimited custom agents**.
 
 ### Default Agents
 
@@ -502,7 +502,7 @@ This means the task runner and chat handler don't care which provider powers an 
 ## Design Principles
 
 ### Open-Ended by Design
-Dispatchr is an **AI operations layer**, not a point solution. The same infrastructure supports code generation, research automation, monitoring, client intelligence, and workflows that haven't been imagined yet.
+Conductr is an **AI operations layer**, not a point solution. The same infrastructure supports code generation, research automation, monitoring, client intelligence, and workflows that haven't been imagined yet.
 
 ### Never Switch Away
 The app must have feature parity with Claude Desktop (rendering), Claude Code (code execution), Codex (multi-agent + automation), and Cursor (live preview) — so users never need to open another AI tool.

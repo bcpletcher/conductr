@@ -12,7 +12,7 @@ test.describe('App Launch', () => {
   })
 
   test('app title is visible in sidebar', async ({ page }) => {
-    const title = page.locator('[data-testid="sidebar"]').getByText('Dispatchr')
+    const title = page.locator('[data-testid="sidebar"]').getByText('Conductr')
     await expect(title).toBeVisible()
   })
 })

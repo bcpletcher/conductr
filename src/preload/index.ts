@@ -76,7 +76,98 @@ const api = {
       ipcRenderer.removeAllListeners('chat:done')
       ipcRenderer.removeAllListeners('chat:error')
     }
-  }
+  },
+
+  // Documents
+  documents: {
+    getAll: (limit?: number) => ipcRenderer.invoke('documents:getAll', limit),
+    getById: (id: string) => ipcRenderer.invoke('documents:getById', id),
+    create: (input: unknown) => ipcRenderer.invoke('documents:create', input),
+    delete: (id: string) => ipcRenderer.invoke('documents:delete', id),
+    search: (query: string) => ipcRenderer.invoke('documents:search', query),
+    getByTag: (tag: string) => ipcRenderer.invoke('documents:getByTag', tag),
+    getByTask: (taskId: string) => ipcRenderer.invoke('documents:getByTask', taskId),
+    getByAgent: (agentId: string) => ipcRenderer.invoke('documents:getByAgent', agentId),
+    onCreated: (cb: (data: { document: unknown }) => void) =>
+      ipcRenderer.on('documents:created', (_e, data) => cb(data)),
+    removeCreatedListener: () => ipcRenderer.removeAllListeners('documents:created'),
+  },
+
+  // Journal
+  journal: {
+    getAll: (limit?: number) => ipcRenderer.invoke('journal:getAll', limit),
+    getByDate: (date: string) => ipcRenderer.invoke('journal:getByDate', date),
+    create: (input: unknown) => ipcRenderer.invoke('journal:create', input),
+    update: (id: string, content: string) => ipcRenderer.invoke('journal:update', id, content),
+    delete: (id: string) => ipcRenderer.invoke('journal:delete', id),
+    search: (query: string) => ipcRenderer.invoke('journal:search', query),
+  },
+
+  // Clients
+  clients: {
+    getAll: () => ipcRenderer.invoke('clients:getAll'),
+    getById: (id: string) => ipcRenderer.invoke('clients:getById', id),
+    create: (input: unknown) => ipcRenderer.invoke('clients:create', input),
+    update: (id: string, input: unknown) => ipcRenderer.invoke('clients:update', id, input),
+    delete: (id: string) => ipcRenderer.invoke('clients:delete', id),
+    getTaskCount: (clientId: string) => ipcRenderer.invoke('clients:getTaskCount', clientId),
+    getDocCount: (clientId: string) => ipcRenderer.invoke('clients:getDocCount', clientId),
+    getTasks: (clientId: string) => ipcRenderer.invoke('clients:getTasks', clientId),
+    getDocuments: (clientId: string) => ipcRenderer.invoke('clients:getDocuments', clientId),
+    getActivityLog: (clientId: string, limit?: number) =>
+      ipcRenderer.invoke('clients:getActivityLog', clientId, limit),
+  },
+
+  // Settings
+  settings: {
+    get: (key: string) => ipcRenderer.invoke('settings:get', key),
+    set: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value),
+    pickWallpaper: () => ipcRenderer.invoke('settings:pick-wallpaper'),
+  },
+
+  // App-level push events from main process
+  app: {
+    /** Current OS platform — used by renderer to show/hide Windows title bar controls */
+    platform: process.platform,
+    onOpenShortcutSheet: (cb: () => void) =>
+      ipcRenderer.on('open-shortcut-sheet', () => cb()),
+    removeShortcutSheetListener: () =>
+      ipcRenderer.removeAllListeners('open-shortcut-sheet'),
+    /** Fired by the system tray / menu-bar when the user picks a navigation item */
+    onTrayNavigate: (cb: (page: string) => void) =>
+      ipcRenderer.on('tray:navigate', (_e, page: string) => cb(page)),
+    removeTrayNavigateListener: () =>
+      ipcRenderer.removeAllListeners('tray:navigate'),
+  },
+
+  // Window controls — used by custom title bar on Windows
+  window: {
+    minimize: () => ipcRenderer.send('window:minimize'),
+    maximize: () => ipcRenderer.send('window:maximize'),
+    close:    () => ipcRenderer.send('window:close'),
+  },
+
+  // Intelligence
+  intelligence: {
+    getAll: (limit?: number) => ipcRenderer.invoke('intelligence:getAll', limit),
+    getUnread: () => ipcRenderer.invoke('intelligence:getUnread'),
+    markRead: (id: string) => ipcRenderer.invoke('intelligence:markRead', id),
+    markAllRead: () => ipcRenderer.invoke('intelligence:markAllRead'),
+    delete: (id: string) => ipcRenderer.invoke('intelligence:delete', id),
+    generate: (type: 'insight' | 'recap') =>
+      ipcRenderer.send('intelligence:generate', { type }),
+    onChunk: (cb: (data: { chunk: string }) => void) =>
+      ipcRenderer.on('intelligence:chunk', (_e, data) => cb(data)),
+    onDone: (cb: (data: { insight: unknown }) => void) =>
+      ipcRenderer.on('intelligence:done', (_e, data) => cb(data)),
+    onError: (cb: (data: { error: string }) => void) =>
+      ipcRenderer.on('intelligence:error', (_e, data) => cb(data)),
+    removeAllListeners: () => {
+      ipcRenderer.removeAllListeners('intelligence:chunk')
+      ipcRenderer.removeAllListeners('intelligence:done')
+      ipcRenderer.removeAllListeners('intelligence:error')
+    },
+  },
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

@@ -70,7 +70,7 @@ export default function TaskCard({ task, onClick, onStart }: TaskCardProps): Rea
                 {task.progress}% complete
               </span>
             )}
-            <span className="text-xs text-text-dim ml-auto">{timeAgo(task.created_at)}</span>
+            <span className="text-xs ml-auto" style={{ color: 'rgba(255,255,255,0.28)' }}>{timeAgo(task.created_at)}</span>
           </div>
 
           {/* Progress bar */}

@@ -29,4 +29,31 @@ test.describe('Workshop', () => {
     // Task should appear in the list (use .first() since prior runs may have left duplicates in DB)
     await expect(page.locator('[data-testid="task-card"]').getByText('E2E Test Task').first()).toBeVisible()
   })
+
+  test('view toggle switches between list and board views', async ({ page }) => {
+    // Default is list — tab bar visible, board view hidden
+    await expect(page.locator('[data-testid="view-toggle-list"]')).toBeVisible()
+    await expect(page.locator('[data-testid="view-toggle-board"]')).toBeVisible()
+    await expect(page.locator('[data-testid="board-view"]')).not.toBeVisible()
+
+    // Switch to board view
+    await page.click('[data-testid="view-toggle-board"]')
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible()
+
+    // Tab bar should be hidden in board mode
+    await expect(page.getByText(/queued\s*\(/i)).not.toBeVisible()
+
+    // Switch back to list
+    await page.click('[data-testid="view-toggle-list"]')
+    await expect(page.locator('[data-testid="board-view"]')).not.toBeVisible()
+    await expect(page.getByText(/queued\s*\(/i)).toBeVisible()
+  })
+
+  test('board view shows all four column headings', async ({ page }) => {
+    await page.click('[data-testid="view-toggle-board"]')
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible()
+    for (const col of ['Queued', 'Active', 'Complete', 'Failed']) {
+      await expect(page.locator('[data-testid="board-view"]').getByText(col).first()).toBeVisible()
+    }
+  })
 })

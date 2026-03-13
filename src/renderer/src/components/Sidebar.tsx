@@ -1,172 +1,345 @@
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { NavPage } from '../App'
+import { useUIStore } from '../store/ui'
+import type { Document } from '../env.d'
 
 interface SidebarProps {
   currentPage: NavPage
   onNavigate: (page: NavPage) => void
 }
 
-interface NavItem {
-  id: NavPage
-  label: string
-  icon: string
-}
+type NavItemDef = { id: NavPage; label: string; icon: string }
 
-interface NavGroup {
-  label: string
-  items: NavItem[]
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: 'Overview',
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-house' },
-    ],
-  },
-  {
-    label: 'Workspace',
-    items: [
-      { id: 'workshop', label: 'Workshop', icon: 'fa-solid fa-gears' },
-      { id: 'chat',     label: 'Chat',     icon: 'fa-solid fa-message' },
-      { id: 'agents',   label: 'Agents',   icon: 'fa-solid fa-robot' },
-    ],
-  },
-  {
-    label: 'Intelligence',
-    items: [
-      { id: 'intelligence', label: 'Intelligence', icon: 'fa-solid fa-brain' },
-      { id: 'documents',    label: 'Documents',    icon: 'fa-solid fa-file-lines' },
-      { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
-      { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
-    ],
-  },
+const NAV_ITEMS: NavItemDef[] = [
+  { id: 'dashboard',    label: 'Dashboard',    icon: 'fa-solid fa-house' },
+  { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
+  { id: 'documents',    label: 'Documents',    icon: 'fa-solid fa-file-lines' },
+  { id: 'agents',       label: 'Agents',       icon: 'fa-solid fa-robot' },
+  { id: 'intelligence', label: 'Intelligence', icon: 'fa-solid fa-brain' },
+  { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
+  { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
+  { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
 ]
 
-const SYSTEM_ITEMS: NavItem[] = [
+const SYSTEM_ITEMS: NavItemDef[] = [
   { id: 'metrics',  label: 'API Manager', icon: 'fa-solid fa-chart-bar' },
   { id: 'settings', label: 'Settings',    icon: 'fa-solid fa-gear' },
 ]
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {
+  const notifications  = useUIStore((s) => s.notifications)
+  const openNotifPanel = useUIStore((s) => s.openNotifPanel)
+  const accentColor    = useUIStore((s) => s.accentColor)
+  const unreadCount    = notifications.filter((n) => !n.read).length
+
+  const [showPopover, setShowPopover] = useState(false)
+  const [popoverPos,  setPopoverPos]  = useState({ top: 0, left: 0 })
+  const [recentDocs,  setRecentDocs]  = useState<Document[]>([])
+  const [activeTasks, setActiveTasks] = useState(0)
+  const [now,         setNow]         = useState(() => Date.now())
+  const [appStart]                    = useState(() => Date.now())
+
+  const headerRef = useRef<HTMLDivElement>(null)
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  // Tick every second for countdown
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Load recent docs and active task count on mount
+  useEffect(() => {
+    window.electronAPI.documents.getAll(3).then(setRecentDocs).catch(() => {})
+    window.electronAPI.tasks.getByStatus('active').then((t) => setActiveTasks(t.length)).catch(() => {})
+  }, [])
+
+  // Popover open/close with delay to allow mousing into the popover
+  const showPop = (): void => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    if (headerRef.current) {
+      const r = headerRef.current.getBoundingClientRect()
+      setPopoverPos({ top: r.top, left: r.right + 8 })
+    }
+    setShowPopover(true)
+  }
+
+  const hidePop = (): void => {
+    hideTimer.current = setTimeout(() => setShowPopover(false), 100)
+  }
+
+  // --- Computed values ---
+  const secondsIntoInterval = Math.floor((now / 1000) % 1800)
+  const nextCheckSecs        = 1800 - secondsIntoInterval
+  const nextCheckStr         = nextCheckSecs > 60
+    ? `${Math.floor(nextCheckSecs / 60)}m`
+    : `${nextCheckSecs}s`
+
+  const uptimeSecs    = Math.floor((now - appStart) / 1000)
+  const uptimeMinutes = Math.floor(uptimeSecs / 60)
+  const uptimeHours   = Math.floor(uptimeMinutes / 60)
+  const uptimeStr     = uptimeHours > 0
+    ? `${uptimeHours}:${String(uptimeMinutes % 60).padStart(2, '0')}:${String(uptimeSecs % 60).padStart(2, '0')}`
+    : `${uptimeMinutes}:${String(uptimeSecs % 60).padStart(2, '0')}`
+
+  const statusLabel = activeTasks > 0 ? 'Active' : 'Idle'
+  const statusColor = activeTasks > 0 ? '#34d399' : '#fbbf24'
+  const loadLabel   = activeTasks === 0 ? 'Low' : activeTasks < 3 ? 'Med' : 'High'
+  const loadBpm     = activeTasks === 0 ? '50 BPM' : activeTasks < 3 ? '85 BPM' : '120 BPM'
+
   return (
-    <aside
-      data-testid="sidebar"
-      className="flex-shrink-0 flex flex-col overflow-hidden"
-      style={{
-        width: 248,
-        /*
-          White-tinted frosted glass panel.
-          The rgba(255,255,255,...) tint makes the sidebar appear
-          noticeably lighter than the deep navy body background —
-          the same visual contrast as the reference image.
-          Heavy blur ensures the background gradient bleeds through softly.
-        */
-        /*
-          High blur + very low white tint = gradient bleeds through
-          as a muted colour wash, making the sidebar feel "frosted"
-          while keeping it darker than the vivid background.
-        */
-        background: 'rgba(255, 255, 255, 0.032)',
-        WebkitBackdropFilter: 'blur(80px) saturate(1.1)',
-        backdropFilter: 'blur(80px) saturate(1.1)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.03)',
-        borderTopRightRadius: 20,
-        borderBottomRightRadius: 20,
-        WebkitAppRegion: 'drag',
-      } as React.CSSProperties}
-    >
-      {/* Logo */}
-      <div className="pt-12 pb-4 px-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'linear-gradient(145deg, #9b8dfa 0%, #5e40f0 100%)',
-              boxShadow: '0 0 22px rgba(139,124,248,0.50), 0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25)',
-            }}
-          >
-            <i className="fa-solid fa-rocket text-white" style={{ fontSize: 11 }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.025em', lineHeight: 1 }}>
-              Dispatchr
-            </div>
-            <div style={{ fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>
-              Autonomous AI
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation groups */}
-      <nav
-        className="flex-1 px-3 overflow-y-auto"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        {NAV_GROUPS.map((group, gi) => (
-          <div key={group.label}>
-            <span className="nav-section-label" style={{ marginTop: gi === 0 ? 4 : 18 }}>
-              {group.label}
-            </span>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  data-testid={`nav-${item.id}`}
-                  className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-                >
-                  <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Divider */}
-        <div
-          className="mx-2 my-4"
-          style={{
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)',
-          }}
-        />
-
-        <div className="space-y-0.5">
-          {SYSTEM_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              data-testid={`nav-${item.id}`}
-              className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-            >
-              <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      {/* Footer */}
-      <div
-        className="px-5 py-4"
+    <>
+      <aside
+        data-testid="sidebar"
+        className="flex-shrink-0 flex flex-col overflow-hidden"
         style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          WebkitAppRegion: 'no-drag',
+          width: 248,
+          background: 'rgba(255, 255, 255, 0.032)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.1)',
+          backdropFilter: 'blur(40px) saturate(1.1)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.03)',
+          borderTopRightRadius: 20,
+          borderBottomRightRadius: 20,
+          WebkitAppRegion: 'drag',
         } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2">
-          <div
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: '#34d399', boxShadow: '0 0 6px rgba(52,211,153,0.9)' }}
-          />
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.26)', letterSpacing: '0.02em' }}>
-            v0.1.0 · Phase 8
-          </span>
+        {/* ── Logo + bell header ──────────────────────────────── */}
+        <div
+          ref={headerRef}
+          className="pt-10 pb-4 px-5"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          onMouseEnter={showPop}
+          onMouseLeave={hidePop}
+        >
+          <div className="flex items-center gap-3 cursor-default select-none">
+            {/* Avatar */}
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: `linear-gradient(145deg, ${accentColor}cc 0%, ${accentColor} 100%)`,
+                boxShadow: `0 0 22px ${accentColor}80, 0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25)`,
+              }}
+            >
+              <i className="fa-solid fa-rocket text-white" style={{ fontSize: 12 }} />
+            </div>
+
+            {/* Name + status */}
+            <div className="flex-1 min-w-0">
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.025em', lineHeight: 1.1 }}>
+                Conductr
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: statusColor, boxShadow: `0 0 5px ${statusColor}` }}
+                />
+                <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.01em' }}>
+                  {statusLabel} · {nextCheckStr}
+                </span>
+              </div>
+            </div>
+
+            {/* Bell notification button */}
+            <button
+              data-testid="notif-bell"
+              onClick={(e) => { e.stopPropagation(); openNotifPanel() }}
+              title="Notifications"
+              style={{
+                position: 'relative',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: unreadCount > 0 ? accentColor : 'rgba(255,255,255,0.35)',
+                padding: '4px 6px',
+                borderRadius: 8,
+                lineHeight: 1,
+                transition: 'color 0.15s',
+                flexShrink: 0,
+              }}
+            >
+              <i className="fa-regular fa-bell" style={{ fontSize: 14 }} />
+              {unreadCount > 0 && (
+                <span
+                  data-testid="notif-badge"
+                  style={{
+                    position: 'absolute', top: 0, right: 0,
+                    minWidth: 14, height: 14, padding: '0 3px',
+                    background: accentColor, borderRadius: 7,
+                    fontSize: 9, fontWeight: 700, color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    lineHeight: 1,
+                  }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+
+        {/* ── Navigation ────────────────────────────────────────── */}
+        <nav
+          className="flex-1 px-3 overflow-y-auto"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <span className="nav-section-label" style={{ marginTop: 4 }}>Navigation</span>
+
+          <div className="space-y-0.5 mt-1">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
+              >
+                <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div
+            className="mx-2 my-3"
+            style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }}
+          />
+
+          <div className="space-y-0.5">
+            {SYSTEM_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
+              >
+                <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Recent Documents section */}
+          {recentDocs.length > 0 && (
+            <div className="mt-4 mb-2">
+              <span className="nav-section-label">Recent Documents</span>
+              <div className="space-y-0.5 mt-1">
+                {recentDocs.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => onNavigate('documents')}
+                    className="nav-item w-full text-left"
+                    title={doc.title}
+                  >
+                    <i className="fa-regular fa-file-lines w-4 text-center flex-shrink-0" style={{ fontSize: 11, opacity: 0.7 }} />
+                    <span className="truncate" style={{ fontSize: 12, opacity: 0.85 }}>{doc.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </nav>
+      </aside>
+
+      {/* ── Lyra heartbeat popover — portal escapes backdrop-filter ─ */}
+      {showPopover && createPortal(
+        <div
+          onMouseEnter={showPop}
+          onMouseLeave={hidePop}
+          style={{
+            position: 'fixed',
+            top: popoverPos.top,
+            left: popoverPos.left,
+            width: 272,
+            zIndex: 9000,
+            background: 'rgba(8, 10, 26, 0.97)',
+            WebkitBackdropFilter: 'blur(48px) saturate(1.3)',
+            backdropFilter: 'blur(48px) saturate(1.3)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderTopColor: 'rgba(255,255,255,0.18)',
+            borderRadius: 14,
+            padding: '16px 18px',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.72), 0 0 0 1px rgba(139,124,248,0.08)',
+            animation: 'fade-in 0.12s ease',
+          }}
+        >
+          {/* Status heading */}
+          <div className="flex items-center gap-2.5 mb-4">
+            <span
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ background: statusColor, boxShadow: `0 0 8px ${statusColor}cc` }}
+            />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#eef0f8', lineHeight: 1 }}>
+                {statusLabel}
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', marginTop: 3 }}>
+                Lyra Agent Status
+              </div>
+            </div>
+          </div>
+
+          {/* Current Activity */}
+          <div className="mb-3">
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 4 }}>
+              Current Activity
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#dde2f0' }}>
+              {activeTasks > 0 ? `${activeTasks} task${activeTasks > 1 ? 's' : ''} running` : 'No activity today'}
+            </div>
+          </div>
+
+          {/* Bandwidth Use */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1.5">
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                Bandwidth Use
+              </span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)' }}>0%</span>
+            </div>
+            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
+              <div style={{ width: '0%', height: '100%', background: accentColor, borderRadius: 2 }} />
+            </div>
+          </div>
+
+          {/* Next Check + Load */}
+          <div className="flex gap-5 mb-4">
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 3 }}>
+                Next Check
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {nextCheckStr}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>30m interval</div>
+            </div>
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.07)', paddingLeft: 20 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 3 }}>
+                Load
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {loadLabel}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>{loadBpm}</div>
+            </div>
+          </div>
+
+          {/* Available status + uptime */}
+          <div style={{ paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#34d399' }} />
+              <span style={{ fontSize: 12, color: '#34d399', fontWeight: 500 }}>
+                Available for new tasks
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.26)', marginTop: 4 }}>
+              Session uptime: {uptimeStr}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   )
 }

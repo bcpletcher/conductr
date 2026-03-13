@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import AgentCard from '../components/AgentCard'
 import ActivityFeed from '../components/ActivityFeed'
 import Modal from '../components/Modal'
-import type { Agent, ActivityLogEntry } from '../env.d'
+import type { Agent, ActivityLogEntry, Document } from '../env.d'
 import { AGENT_AVATARS } from '../assets/agents'
 
 const api = window.electronAPI
@@ -14,9 +14,11 @@ interface AgentDetailProps {
 
 function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
   const [log, setLog] = useState<ActivityLogEntry[]>([])
+  const [agentDocs, setAgentDocs] = useState<Document[]>([])
 
   useEffect(() => {
     api.agents.getActivityLog(agent.id).then(setLog)
+    api.documents.getByAgent(agent.id).then((docs) => setAgentDocs(docs as Document[]))
   }, [agent.id])
 
   return (
@@ -72,6 +74,30 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
           <ActivityFeed entries={log} maxHeight="200px" />
         </div>
       </div>
+
+      {/* Linked documents */}
+      {agentDocs.length > 0 && (
+        <div className="mt-5">
+          <h3 className="section-label mb-3">Documents</h3>
+          <div className="space-y-2">
+            {agentDocs.map(doc => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between px-3 py-2 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <i className="fa-solid fa-file-lines text-text-muted flex-shrink-0" style={{ fontSize: 11 }} />
+                  <span className="text-sm text-text-secondary truncate">{doc.title}</span>
+                </div>
+                <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0, marginLeft: 8 }}>
+                  {new Date(doc.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

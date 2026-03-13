@@ -1,4 +1,4 @@
-# 📋 Dispatchr — Feature Spec
+# 📋 Conductr — Feature Spec
 
 ## Goal
 Ship a local Mac app that serves as the **single AI operations layer** — replacing Claude Desktop, ChatGPT, Codex, and every other AI tool with one unified command centre for building, managing, and shipping work through a team of specialized AI agents. Users should never need to switch to another app.
@@ -14,7 +14,7 @@ Ship a local Mac app that serves as the **single AI operations layer** — repla
 - API Metrics screen (token + cost tracking, 7-day bar chart)
 - Chat interface (per-agent conversation history, streaming, typewriter effect)
 - Claude API integration for task running and chat
-- Local SQLite persistence (`dispatchr.db`)
+- Local SQLite persistence (`conductr.db`)
 - Apple Liquid Glass UI (backdrop-blur, rgba panels, inset highlights)
 - Font Awesome icons (self-hosted)
 - Inter Variable font (self-hosted, cross-platform)
@@ -43,7 +43,7 @@ Ship a local Mac app that serves as the **single AI operations layer** — repla
 **Layout**: Sidebar (240px fixed) + content grid
 
 **Sidebar Navigation**:
-- Dispatchr (logo + title)
+- Conductr (logo + title)
 - Dashboard ← default page
 - Workshop
 - Chat
@@ -55,7 +55,7 @@ Ship a local Mac app that serves as the **single AI operations layer** — repla
 - Settings
 
 **Top Bar**:
-- App title: "Dispatchr"
+- App title: "Conductr"
 - Subtitle: "Real-time overview of all systems"
 - Status pill (green = connected, animating)
 - *(Phase 7)* Command palette trigger (Cmd+K) + notification bell
@@ -264,7 +264,7 @@ Role: Lead intelligence and commander of the centre. Responsible for delegating 
 ## Prompt Intelligence Spec (Phase 9)
 
 ### The Problem (from original video)
-The original video concept shows the app analyzing user prompts and suggesting improvements. Currently Dispatchr passes prompts through without any analysis — users don't know if their prompts are clear, specific, or likely to succeed.
+The original video concept shows the app analyzing user prompts and suggesting improvements. Currently Conductr passes prompts through without any analysis — users don't know if their prompts are clear, specific, or likely to succeed.
 
 ### How It Works
 
@@ -310,7 +310,7 @@ prompt_analysis row stored with original_prompt, score, suggestions, outcome
 ## Multi-Provider LLM Spec (Phase 15)
 
 ### The Problem
-Dispatchr currently only supports Anthropic/Claude. Users who also use GPT-4o, Gemini, or local models (Ollama) must switch to other apps for those models. This is the biggest reason to leave Dispatchr.
+Conductr currently only supports Anthropic/Claude. Users who also use GPT-4o, Gemini, or local models (Ollama) must switch to other apps for those models. This is the biggest reason to leave Conductr.
 
 ### Provider Configuration (Settings page)
 
@@ -350,7 +350,7 @@ Chat and task runner don't care which provider is streaming — they all look th
 ## Scheduled Tasks & Automation Spec (Phase 16)
 
 ### The Problem
-Currently every task must be manually created and started. Users can't set up recurring work, background monitoring, or event-triggered automation. Codex and Devin both support this — Dispatchr must too.
+Currently every task must be manually created and started. Users can't set up recurring work, background monitoring, or event-triggered automation. Codex and Devin both support this — Conductr must too.
 
 ### Cron Scheduling (Workshop → New Task)
 - Optional "Schedule" field: dropdown with presets (hourly, daily at 9am, weekly Monday, custom cron)

@@ -3,19 +3,218 @@ import TaskCard from '../components/TaskCard'
 import StatusBadge from '../components/StatusBadge'
 import ActivityFeed from '../components/ActivityFeed'
 import Modal from '../components/Modal'
-import type { Task, ActivityLogEntry, Agent } from '../env.d'
+import type { Task, ActivityLogEntry, Agent, Document, Client } from '../env.d'
 
 const api = window.electronAPI
 
-type Tab = 'queued' | 'active' | 'complete'
+type Tab      = 'queued' | 'active' | 'complete'
+type ViewMode = 'list' | 'board'
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+function timeAgo(iso: string): string {
+  const diff    = Date.now() - new Date(iso).getTime()
+  const hours   = Math.floor(diff / 3_600_000)
+  const minutes = Math.floor(diff / 60_000)
+  if (hours > 24) return `${Math.floor(hours / 24)}d ago`
+  if (hours > 0)  return `${hours}h ago`
+  if (minutes > 0) return `${minutes}m ago`
+  return 'just now'
+}
+
+function parseTags(tagsJson: string): string[] {
+  try { return JSON.parse(tagsJson) || [] } catch { return [] }
+}
+
+const TAG_COLORS = [
+  'bg-indigo-500/20 text-indigo-300',
+  'bg-green-500/20  text-green-300',
+  'bg-orange-500/20 text-orange-300',
+  'bg-blue-500/20   text-blue-300',
+  'bg-purple-500/20 text-purple-300',
+]
+
+// ── BoardCard — compact Kanban card ──────────────────────────────────────────
+
+interface BoardCardProps {
+  task:    Task
+  agents:  Agent[]
+  onClick: () => void
+  onStart?: () => void
+}
+
+function BoardCard({ task, agents, onClick, onStart }: BoardCardProps): React.JSX.Element {
+  const tags  = parseTags(task.tags)
+  const agent = agents.find((a) => a.id === task.agent_id)
+
+  const accentColor = {
+    queued:   '#94a3b8',
+    active:   '#34d399',
+    complete: 'var(--color-accent, #818cf8)',
+    failed:   '#f87171',
+  }[task.status] ?? '#94a3b8'
+
+  return (
+    <div
+      data-testid="board-card"
+      className="rounded-xl p-3 cursor-pointer group transition-all"
+      style={{
+        background:   'rgba(255,255,255,0.04)',
+        border:       '1px solid rgba(255,255,255,0.06)',
+        borderLeft:   `3px solid ${accentColor}`,
+      }}
+      onClick={onClick}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+    >
+      {/* Title */}
+      <h4 className="text-sm font-medium text-text-primary mb-2 leading-snug line-clamp-2">
+        {task.title}
+      </h4>
+
+      {/* Progress bar — active tasks only */}
+      {task.status === 'active' && (
+        <div className="mb-2 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${task.progress}%`, background: '#34d399' }}
+          />
+        </div>
+      )}
+
+      {/* Tags (show first 2, then +N) */}
+      {tags.length > 0 && (
+        <div className="flex gap-1 flex-wrap mb-2">
+          {tags.slice(0, 2).map((tag, i) => (
+            <span
+              key={tag}
+              className={`px-1.5 py-0.5 rounded text-xs font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+            >
+              {tag}
+            </span>
+          ))}
+          {tags.length > 2 && (
+            <span className="text-xs text-text-muted">+{tags.length - 2}</span>
+          )}
+        </div>
+      )}
+
+      {/* Footer: agent + time-ago */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {agent ? (
+            <>
+              <span className="text-sm leading-none flex-shrink-0">{agent.avatar}</span>
+              <span className="text-xs text-text-muted truncate">{agent.name}</span>
+            </>
+          ) : (
+            <span className="text-xs text-text-muted">Unassigned</span>
+          )}
+        </div>
+        <span className="text-xs flex-shrink-0 ml-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          {timeAgo(task.created_at)}
+        </span>
+      </div>
+
+      {/* Hover-reveal Start button for queued tasks */}
+      {task.status === 'queued' && onStart && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onStart() }}
+          className="w-full mt-2.5 btn-primary text-xs py-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          Start <i className="fa-solid fa-arrow-right ml-1" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── BoardView — 4-column Kanban ───────────────────────────────────────────────
+
+const BOARD_COLUMNS: { status: Task['status']; label: string; icon: string; color: string }[] = [
+  { status: 'queued',   label: 'Queued',   icon: 'fa-clock',        color: '#94a3b8' },
+  { status: 'active',   label: 'Active',   icon: 'fa-bolt',         color: '#34d399' },
+  { status: 'complete', label: 'Complete', icon: 'fa-circle-check', color: 'var(--color-accent, #818cf8)' },
+  { status: 'failed',   label: 'Failed',   icon: 'fa-circle-xmark', color: '#f87171' },
+]
+
+interface BoardViewProps {
+  tasks:    Task[]
+  agents:   Agent[]
+  openTask: (task: Task) => void
+  startTask: (taskId: string) => void
+}
+
+function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): React.JSX.Element {
+  return (
+    <div data-testid="board-view" className="flex gap-4 overflow-x-auto pb-4">
+      {BOARD_COLUMNS.map((col) => {
+        const colTasks = tasks.filter((t) => t.status === col.status)
+        return (
+          <div key={col.status} className="flex flex-col" style={{ minWidth: 240, flex: '1 1 0' }}>
+            {/* Column header */}
+            <div className="flex items-center justify-between mb-2 px-0.5">
+              <div className="flex items-center gap-2">
+                <i
+                  className={`fa-solid ${col.icon} text-xs`}
+                  style={{ color: col.color }}
+                />
+                <span className="text-sm font-semibold text-text-primary">{col.label}</span>
+              </div>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full text-text-muted font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
+                {colTasks.length}
+              </span>
+            </div>
+
+            {/* Coloured rule under the header */}
+            <div
+              className="h-0.5 rounded-full mb-3"
+              style={{ background: col.color, opacity: 0.35 }}
+            />
+
+            {/* Card stack */}
+            <div
+              className="flex flex-col gap-2 overflow-y-auto pr-0.5"
+              style={{ maxHeight: 'calc(100vh - 260px)' }}
+            >
+              {colTasks.length === 0 ? (
+                <div
+                  className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.07)' }}
+                >
+                  <i className={`fa-solid ${col.icon} text-text-dim text-base`} style={{ color: col.color, opacity: 0.35 }} />
+                  <span className="text-xs text-text-muted">No {col.label.toLowerCase()} tasks</span>
+                </div>
+              ) : (
+                colTasks.map((task) => (
+                  <BoardCard
+                    key={task.id}
+                    task={task}
+                    agents={agents}
+                    onClick={() => openTask(task)}
+                    onStart={task.status === 'queued' ? () => startTask(task.id) : undefined}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 // ── TaskDetail — pure display, no IPC listeners (Workshop owns them all) ────────
+
 interface TaskDetailProps {
-  task: Task
-  agents: Agent[]
-  liveLog: ActivityLogEntry[]
+  task:         Task
+  agents:       Agent[]
+  liveLog:      ActivityLogEntry[]
   liveProgress: number
-  onClose: () => void
+  onClose:      () => void
 }
 
 function TaskDetail({
@@ -25,17 +224,18 @@ function TaskDetail({
   liveProgress,
   onClose: _onClose
 }: TaskDetailProps): React.JSX.Element {
-  const [running, setRunning] = useState(false)
+  const [running,  setRunning]  = useState(false)
+  const [taskDocs, setTaskDocs] = useState<Document[]>([])
   const assignedAgent = agents.find((a) => a.id === task.agent_id)
+
+  useEffect(() => {
+    api.documents.getByTask(task.id).then((docs) => setTaskDocs(docs as Document[]))
+  }, [task.id])
 
   async function handleStart(): Promise<void> {
     setRunning(true)
     await api.tasks.start(task.id)
     setRunning(false)
-  }
-
-  function parseTags(tagsJson: string): string[] {
-    try { return JSON.parse(tagsJson) || [] } catch { return [] }
   }
 
   return (
@@ -111,37 +311,62 @@ function TaskDetail({
         </div>
       )}
 
-      {/* Activity log — driven by Workshop's consolidated listener */}
+      {/* Activity log */}
       <div>
-        <h3 className="section-label mb-3">
-          Activity Log
-        </h3>
+        <h3 className="section-label mb-3">Activity Log</h3>
         <div className="glass-surface rounded-lg p-3">
           <ActivityFeed entries={liveLog} maxHeight="300px" autoScroll />
         </div>
       </div>
+
+      {/* Linked documents */}
+      {taskDocs.length > 0 && (
+        <div className="mt-5">
+          <h3 className="section-label mb-3">Documents</h3>
+          <div className="space-y-2">
+            {taskDocs.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between px-3 py-2 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <i className="fa-solid fa-file-lines text-text-muted flex-shrink-0" style={{ fontSize: 11 }} />
+                  <span className="text-sm text-text-secondary truncate">{doc.title}</span>
+                </div>
+                <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0, marginLeft: 8 }}>
+                  {new Date(doc.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ── NewTaskForm ─────────────────────────────────────────────────────────────────
+
 interface NewTaskFormProps {
-  agents: Agent[]
-  onSubmit: (data: { title: string; description: string; tags: string[]; agent_id: string }) => void
+  agents:   Agent[]
+  clients:  Client[]
+  onSubmit: (data: { title: string; description: string; tags: string[]; agent_id: string; client_id: string }) => void
   onCancel: () => void
 }
 
-function NewTaskForm({ agents, onSubmit, onCancel }: NewTaskFormProps): React.JSX.Element {
-  const [title, setTitle] = useState('')
+function NewTaskForm({ agents, clients, onSubmit, onCancel }: NewTaskFormProps): React.JSX.Element {
+  const [title,       setTitle]       = useState('')
   const [description, setDescription] = useState('')
-  const [tagsInput, setTagsInput] = useState('')
-  const [agentId, setAgentId] = useState(agents[0]?.id || '')
+  const [tagsInput,   setTagsInput]   = useState('')
+  const [agentId,     setAgentId]     = useState(agents[0]?.id || '')
+  const [clientId,    setClientId]    = useState('')
 
   function handleSubmit(e: React.FormEvent): void {
     e.preventDefault()
     if (!title.trim()) return
     const tags = tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
-    onSubmit({ title: title.trim(), description: description.trim(), tags, agent_id: agentId })
+    onSubmit({ title: title.trim(), description: description.trim(), tags, agent_id: agentId, client_id: clientId })
   }
 
   return (
@@ -177,18 +402,33 @@ function NewTaskForm({ agents, onSubmit, onCancel }: NewTaskFormProps): React.JS
           className="input"
         />
       </div>
-      <div>
-        <label className="block text-xs text-text-muted mb-1.5">Assign Agent</label>
-        <select
-          value={agentId}
-          onChange={(e) => setAgentId(e.target.value)}
-          className="input"
-        >
-          <option value="">No agent</option>
-          {agents.map((a) => (
-            <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-text-muted mb-1.5">Assign Agent</label>
+          <select
+            value={agentId}
+            onChange={(e) => setAgentId(e.target.value)}
+            className="input"
+          >
+            <option value="">No agent</option>
+            {agents.map((a) => (
+              <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-text-muted mb-1.5">Client (optional)</label>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            className="input"
+          >
+            <option value="">No client</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="btn-ghost px-4 py-2">
@@ -201,15 +441,18 @@ function NewTaskForm({ agents, onSubmit, onCancel }: NewTaskFormProps): React.JS
 }
 
 // ── Workshop page ───────────────────────────────────────────────────────────────
+
 export default function Workshop(): React.JSX.Element {
-  const [tab, setTab] = useState<Tab>('queued')
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [agents, setAgents] = useState<Agent[]>([])
+  const [tab,          setTab]          = useState<Tab>('queued')
+  const [viewMode,     setViewMode]     = useState<ViewMode>('list')
+  const [tasks,        setTasks]        = useState<Task[]>([])
+  const [agents,       setAgents]       = useState<Agent[]>([])
+  const [clients,      setClients]      = useState<Client[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [showNewTask, setShowNewTask] = useState(false)
+  const [showNewTask,  setShowNewTask]  = useState(false)
 
   // Live state keyed by taskId — single source of truth, owned here
-  const [taskLogs, setTaskLogs] = useState<Map<string, ActivityLogEntry[]>>(new Map())
+  const [taskLogs,     setTaskLogs]     = useState<Map<string, ActivityLogEntry[]>>(new Map())
   const [taskProgress, setTaskProgress] = useState<Map<string, number>>(new Map())
 
   async function loadTasks(): Promise<void> {
@@ -220,22 +463,16 @@ export default function Workshop(): React.JSX.Element {
   useEffect(() => {
     loadTasks()
     api.agents.getAll().then(setAgents)
+    api.clients.getAll().then(setClients)
 
-    // All task IPC listeners live here — no child component registers its own
+    // All task IPC listeners live here — never in child components
     api.tasks.onStatusUpdate(({ taskId, status }) => {
-      setTasks((prev) =>
-        prev.map((t) => t.id === taskId ? { ...t, status: status as Task['status'] } : t)
-      )
-      // Keep the open modal's status badge in sync
-      setSelectedTask((prev) =>
-        prev?.id === taskId ? { ...prev, status: status as Task['status'] } : prev
-      )
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: status as Task['status'] } : t))
+      setSelectedTask((prev) => prev?.id === taskId ? { ...prev, status: status as Task['status'] } : prev)
     })
 
     api.tasks.onProgressUpdate(({ taskId, progress: p }) => {
-      // Updates card progress bars in the list
       setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, progress: p } : t))
-      // Feeds liveProgress into TaskDetail
       setTaskProgress((prev) => new Map(prev).set(taskId, p))
     })
 
@@ -243,11 +480,11 @@ export default function Workshop(): React.JSX.Element {
       setTaskLogs((prev) => {
         const existing = prev.get(taskId) ?? []
         const entry: ActivityLogEntry = {
-          id: `live-${Date.now()}-${Math.random()}`,
-          task_id: taskId,
-          agent_id: null,
+          id:        `live-${Date.now()}-${Math.random()}`,
+          task_id:   taskId,
+          agent_id:  null,
           message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         }
         return new Map(prev).set(taskId, [...existing, entry])
       })
@@ -256,100 +493,163 @@ export default function Workshop(): React.JSX.Element {
     return () => api.tasks.removeAllListeners()
   }, [])
 
-  // Fetch persisted log from DB when opening a task; skip if live events already populated it
+  // N shortcut — opens new task modal when no input is focused
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'n' && e.key !== 'N') return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      setShowNewTask(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Fetch persisted log when opening a task; skip if live events already populated it
   async function openTask(task: Task): Promise<void> {
     setSelectedTask(task)
     if (!taskLogs.has(task.id)) {
       const log = await api.tasks.getActivityLog(task.id)
       setTaskLogs((prev) => {
-        if (prev.has(task.id)) return prev // a live event arrived in the meantime
+        if (prev.has(task.id)) return prev
         return new Map(prev).set(task.id, log)
       })
     }
   }
 
   const filtered = tasks.filter((t) => {
-    if (tab === 'queued') return t.status === 'queued'
-    if (tab === 'active') return t.status === 'active'
+    if (tab === 'queued')   return t.status === 'queued'
+    if (tab === 'active')   return t.status === 'active'
     if (tab === 'complete') return t.status === 'complete' || t.status === 'failed'
     return false
   })
 
   const counts = {
-    queued: tasks.filter((t) => t.status === 'queued').length,
-    active: tasks.filter((t) => t.status === 'active').length,
-    complete: tasks.filter((t) => t.status === 'complete' || t.status === 'failed').length
+    queued:   tasks.filter((t) => t.status === 'queued').length,
+    active:   tasks.filter((t) => t.status === 'active').length,
+    complete: tasks.filter((t) => t.status === 'complete' || t.status === 'failed').length,
   }
 
   async function handleCreateTask(data: {
-    title: string; description: string; tags: string[]; agent_id: string
+    title: string; description: string; tags: string[]; agent_id: string; client_id: string
   }): Promise<void> {
     await api.tasks.create(data)
     setShowNewTask(false)
     loadTasks()
   }
 
-  // Start from TaskCard button — opens modal then fires the task
   async function handleStartFromCard(taskId: string): Promise<void> {
     await api.tasks.updateStatus(taskId, 'active')
     loadTasks()
     const task = tasks.find((t) => t.id === taskId)
     if (task) openTask({ ...task, status: 'active' })
-    api.tasks.start(taskId) // fire-and-forget; events come through listeners above
+    api.tasks.start(taskId)
   }
 
   return (
     <div data-testid="workshop-page">
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="page-header flex items-start justify-between">
         <div>
           <h1 className="page-title">Workshop</h1>
           <p className="page-subtitle">Autonomous work queue & live progress</p>
         </div>
-        <button onClick={() => setShowNewTask(true)} className="btn-primary">
-          + New Task
-        </button>
-      </div>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 mb-5 border-b border-border">
-        {(['queued', 'active', 'complete'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium transition-colors capitalize border-b-2 -mb-px ${
-              tab === t
-                ? 'border-accent text-accent'
-                : 'border-transparent text-text-muted hover:text-text-primary'
-            }`}
+        <div className="flex items-center gap-3">
+          {/* List / Board view toggle */}
+          <div
+            className="flex items-center gap-0.5 p-1 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
           >
-            {t} ({counts[t]})
+            <button
+              data-testid="view-toggle-list"
+              onClick={() => setViewMode('list')}
+              title="List view"
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'list'
+                  ? 'text-accent'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+              style={viewMode === 'list' ? { background: 'var(--color-accent-subtle, rgba(129,140,248,0.15))' } : {}}
+            >
+              <i className="fa-solid fa-list text-sm" />
+            </button>
+            <button
+              data-testid="view-toggle-board"
+              onClick={() => setViewMode('board')}
+              title="Board view"
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'board'
+                  ? 'text-accent'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+              style={viewMode === 'board' ? { background: 'var(--color-accent-subtle, rgba(129,140,248,0.15))' } : {}}
+            >
+              <i className="fa-solid fa-table-cells text-sm" />
+            </button>
+          </div>
+
+          <button onClick={() => setShowNewTask(true)} className="btn-primary">
+            + New Task
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Task list */}
-      {filtered.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center gap-3 py-16">
-          <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.04] flex items-center justify-center">
-            <i className={`fa-solid ${tab === 'queued' ? 'fa-clock' : tab === 'active' ? 'fa-bolt' : 'fa-circle-check'} text-text-dim text-base`} />
+      {/* ── List view ──────────────────────────────────────────────────────── */}
+      {viewMode === 'list' && (
+        <>
+          {/* Tab bar */}
+          <div className="flex items-center gap-1 mb-5 border-b border-border">
+            {(['queued', 'active', 'complete'] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-2 text-sm font-medium transition-colors capitalize border-b-2 -mb-px ${
+                  tab === t
+                    ? 'border-accent text-accent'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {t} ({counts[t]})
+              </button>
+            ))}
           </div>
-          <span className="text-sm text-text-muted">No {tab} tasks</span>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onClick={() => openTask(task)}
-              onStart={() => handleStartFromCard(task.id)}
-            />
-          ))}
-        </div>
+
+          {/* Task list */}
+          {filtered.length === 0 ? (
+            <div className="card flex flex-col items-center justify-center gap-3 py-16">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.04] flex items-center justify-center">
+                <i className={`fa-solid ${tab === 'queued' ? 'fa-clock' : tab === 'active' ? 'fa-bolt' : 'fa-circle-check'} text-text-dim text-base`} />
+              </div>
+              <span className="text-sm text-text-muted">No {tab} tasks</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={() => openTask(task)}
+                  onStart={() => handleStartFromCard(task.id)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Task detail modal */}
+      {/* ── Board view ─────────────────────────────────────────────────────── */}
+      {viewMode === 'board' && (
+        <BoardView
+          tasks={tasks}
+          agents={agents}
+          openTask={openTask}
+          startTask={handleStartFromCard}
+        />
+      )}
+
+      {/* ── Task detail modal ──────────────────────────────────────────────── */}
       <Modal
         open={!!selectedTask}
         onClose={() => setSelectedTask(null)}
@@ -367,7 +667,7 @@ export default function Workshop(): React.JSX.Element {
         )}
       </Modal>
 
-      {/* New task modal */}
+      {/* ── New task modal ─────────────────────────────────────────────────── */}
       <Modal
         open={showNewTask}
         onClose={() => setShowNewTask(false)}
@@ -376,6 +676,7 @@ export default function Workshop(): React.JSX.Element {
       >
         <NewTaskForm
           agents={agents}
+          clients={clients}
           onSubmit={handleCreateTask}
           onCancel={() => setShowNewTask(false)}
         />

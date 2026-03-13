@@ -1,4 +1,4 @@
-# 🗺️ Dispatchr — Roadmap
+# 🗺️ Conductr — Roadmap
 
 ## Phase 0 — Project Setup ✅
 > Get the skeleton running locally as a Mac app
@@ -14,7 +14,7 @@
 - [x] Font Awesome Free (self-hosted webfonts, `<i>` class syntax)
 - [x] Apple Glass UI (vibrancy + backdrop-blur + rgba panels)
 - [x] Playwright E2E test harness (Electron via `_electron.launch()`)
-- [x] Rename app to **Dispatchr**, lead agent to **Lyra**
+- [x] Rename app to **Conductr**, lead agent to **Lyra**
 
 ---
 
@@ -45,6 +45,7 @@
 - [x] Progress logging to SQLite
 - [x] Real-time live feed (IPC streaming to activity log in modal, progress on cards)
 - [x] Glass design system applied to Workshop page
+- [x] Board view — Kanban columns (Queued / Active / Complete / Failed) with compact cards + view toggle (List | Board) in header
 - [ ] Task templates — save a task configuration (title, description, tags, agent) for reuse
 - [ ] Task duplication — right-click duplicate a task card with all settings
 - [ ] Batch operations — select multiple tasks to bulk-assign, bulk-delete, or bulk-start
@@ -81,26 +82,26 @@
 
 ---
 
-## Phase 5 — Intelligence & Documents
+## Phase 5 — Intelligence & Documents ✅
 > Knowledge base and AI-generated insights
 
-- [ ] Documents list with search and tagging
-- [ ] Auto-save: agents auto-generate documents from completed task output
-- [ ] Weekly Recaps — auto-generated summaries of tasks, costs, agent performance
-- [ ] Intelligence feed — AI-synthesized patterns and insights across all activity
-- [ ] Journal — session log with decisions, rationale, and timestamps
-- [ ] File linking to tasks and agents
-- [ ] Search across all documents and activity logs
+- [x] Documents list with search and tagging
+- [x] Auto-save: agents auto-generate documents from completed task output
+- [x] Weekly Recaps — auto-generated summaries of tasks, costs, agent performance
+- [x] Intelligence feed — AI-synthesized patterns and insights across all activity
+- [x] Journal — session log with decisions, rationale, and timestamps
+- [x] File linking to tasks and agents
+- [x] Search across all documents and activity logs
 
 ---
 
-## Phase 6 — Clients
+## Phase 6 — Clients ✅
 > Client-specific project tracking
 
-- [ ] Client list view
-- [ ] Client detail page (projects, tasks, documents)
-- [ ] Link tasks and agents to specific clients
-- [ ] Client intelligence panel (per-client knowledge, activity, insights)
+- [x] Client list view
+- [x] Client detail page (projects, tasks, documents)
+- [x] Link tasks and agents to specific clients
+- [x] Client intelligence panel (per-client knowledge, activity, insights)
 
 ---
 
@@ -108,20 +109,20 @@
 > Make it feel like a real Mac app that power users never want to leave
 
 **Desktop polish:**
-- [ ] macOS menu bar integration (standard File/Edit/View/Window menu)
-- [ ] System tray / menu bar launcher — quick task status + new task without opening full app
-- [ ] App icon + branding
+- [x] macOS menu bar integration (standard File/Edit/View/Window/Help menu + Keyboard Shortcuts item)
+- [x] System tray / menu bar launcher — quick task status + navigation (Dashboard / Workshop / Chat) without opening full app
+- [x] App icon + branding — conductor-wave logo rendered at 1024×1024 via pure-Node PNG generator; packaged as `.icns` (macOS) + `.ico` (Windows, 16/32/48/256); `npm run generate-icons`
 - [ ] Electron auto-updater
 - [ ] `.dmg` build for distribution
 - [ ] Onboarding wizard — first-run setup (API key entry, guided tour, sample task)
 - [ ] Electron vibrancy — true OS-level blur for sidebar (`vibrancy: 'under-window'`)
 
 **Command palette (Cmd+K):**
-- [ ] Quick task creation ("create task: build auth module")
-- [ ] Quick agent switch ("talk to Forge")
-- [ ] Quick navigation (jump to any page)
-- [ ] Quick search (search tasks, agents, memories, documents, chat)
-- [ ] Quick actions (start task, clear chat, open settings)
+- [x] Quick task creation ("create task: build auth module")
+- [x] Quick agent switch ("talk to Forge")
+- [x] Quick navigation (jump to any page)
+- [x] Quick search (search tasks, agents, memories, documents, chat)
+- [x] Quick actions — Open Settings, New Task, View Keyboard Shortcuts (action kind in palette with direct callbacks)
 
 **Global search:**
 - [ ] Unified search across tasks, agents, memories, documents, chat history, activity logs
@@ -130,21 +131,29 @@
 
 **Keyboard shortcuts:**
 - [ ] Full keyboard navigation (Tab through sidebar, Enter to select)
-- [ ] Per-page shortcuts (Workshop: N for new task, S for start, Escape for close)
+- [x] Per-page shortcuts (Workshop: N for new task)
 - [ ] Customizable keybindings (stored in settings)
-- [ ] Shortcut cheat sheet overlay (Cmd+/)
+- [x] Shortcut cheat sheet overlay (Cmd+/)
 
 **Notification center:**
-- [ ] In-app toast notifications (bottom-right glass toasts)
-- [ ] Notification center panel (bell icon in sidebar header, slide-out panel)
-- [ ] macOS native notifications integration
+- [x] In-app toast notifications (bottom-right glass toasts)
+- [x] Notification center panel (bell icon in sidebar footer, slide-out panel)
+- [x] macOS native notifications — OS-level toast on task complete (chime) and task failed (silent) via `Notification.isSupported()` guard in `tasks:start` handler
 - [ ] Configurable per-event: task complete, agent error, budget alert, pipeline done, scheduled task ran
 - [ ] Notification modes: always / only when app is in background / never
 
 **Appearance:**
-- [ ] Accent color picker (indigo default, selectable palette)
-- [ ] Compact vs comfortable density toggle
-- [ ] Sidebar position (left / right)
+- [x] Accent color picker (indigo default, selectable palette)
+- [x] Compact vs comfortable density toggle
+- [x] Wallpaper selector — choose from built-in options or upload one custom image (single slot, replaces previous; default: `wallpaper.png`)
+- [x] Wallpaper brightness slider — user-controlled opacity + overlay darkness (stored in settings, live preview)
+
+**Cross-platform & Distribution:**
+- [x] Windows support — custom title-bar controls (min / max / close), NSIS installer via electron-builder, Mac-like glass aesthetic preserved via CSS `backdrop-filter`
+- [ ] macOS `.dmg` build for distribution
+- [ ] Windows NSIS installer build
+- [x] App icon — `.icns` (macOS) + `.ico` (Windows) — generated by `scripts/generate-icons.mjs`
+- [ ] Electron auto-updater (Squirrel.Mac + NSIS delta updates)
 
 ---
 
@@ -169,6 +178,11 @@
 - [ ] LaTeX math rendering (optional, for research tasks)
 - [ ] Link previews (clickable URLs with title/favicon)
 
+**Per-message actions:**
+- [x] Copy button — hover-reveal copy button on every message bubble (clipboard, green check feedback)
+- [x] Export conversation as markdown (full thread, Blob download, timestamped filename)
+- [x] Save conversation as Document — persists to Documents page (`doc_type: 'recap'`) + toast confirmation
+
 **Multimodal input:**
 - [ ] Image/screenshot paste (Cmd+V) → sent to Claude vision API for analysis
 - [ ] Drag-and-drop images into chat
@@ -181,7 +195,7 @@
 - [ ] User confirms → system action executes in background
 - [ ] Result echoed back as system message in thread
 - [ ] "Run this" on code blocks → execute in terminal (Phase 10 integration)
-- [ ] "Save this as a document" → create document from message content
+- [x] "Save this as a document" → create document from message content
 
 **Context intelligence:**
 - [x] Context window indicator — token count per message, remaining capacity bar
@@ -191,16 +205,17 @@
 
 **Conversation management:**
 - [ ] Search across all conversation threads (per-agent + global)
-- [ ] Export conversation as markdown (full thread or selection)
+- [x] Export conversation as markdown (full thread or selection)
 - [ ] Conversation branching — fork at any message (create alternate thread from that point)
 - [ ] Message bookmarks / pinning (star important messages for quick reference)
 - [ ] Message annotations — add notes to any message
 
 **Broadcast mode:**
-- [ ] Fan a single message to all agents simultaneously
-- [ ] Multi-column response view (one column per agent)
-- [ ] Compare responses side-by-side
-- [ ] Select best response and continue that thread
+- [x] Fan a single message to all agents simultaneously (parallel IPC send, responses stream in concurrently)
+- [x] Multi-column response view (one column per agent, 280px glass card, streaming + done states)
+- [x] Agent chip selector — toggle individual agents in/out of the broadcast before sending
+- [x] Select best response and continue that thread ("Continue with {Agent}" button per column)
+- [ ] Compare responses side-by-side (diff/highlight key differences — Phase 15)
 
 **Code execution in chat (Phase 10 integration):**
 - [ ] "Run" button on code blocks → execute in connected repo's terminal
@@ -212,7 +227,7 @@
 ## Phase 9 — Agent Memory & Learning System
 > Agents that get smarter with every task they complete
 
-This is the core intelligence layer. Without persistent memory, agents start from scratch every task. With it, Dispatchr becomes a genuinely learning system — the longer you use it, the more capable it gets.
+This is the core intelligence layer. Without persistent memory, agents start from scratch every task. With it, Conductr becomes a genuinely learning system — the longer you use it, the more capable it gets.
 
 **Memory persistence:**
 - [ ] `agent_memories` table — store extracted insights after each task completes
@@ -251,7 +266,7 @@ This is the core intelligence layer. Without persistent memory, agents start fro
 > Real code execution — agents that actually read, write, and ship code. Matches Claude Code and Codex capabilities.
 
 **Repo connection:**
-- [ ] Local repo browser — connect Dispatchr to one or more local repos (folder picker in Settings)
+- [ ] Local repo browser — connect Conductr to one or more local repos (folder picker in Settings)
 - [ ] File tree viewer — expandable directory tree in Workshop task detail
 - [ ] Read file contents into agent context (Scout can see your actual codebase)
 
@@ -267,7 +282,7 @@ This is the core intelligence layer. Without persistent memory, agents start fro
 - [ ] Iterative error fixing — agent sees test failure, proposes fix, runs again (like Claude Code)
 
 **Git operations (via `simple-git`):**
-- [ ] Branch creation: `dispatchr/task-{id}-{slug}`
+- [ ] Branch creation: `conductr/task-{id}-{slug}`
 - [ ] Auto-commit with generated message from task context
 - [ ] Status, diff, push, log — all exposed via IPC
 - [ ] Branch cleanup after merge
@@ -400,7 +415,7 @@ MCP (Model Context Protocol) lets agents call external tools — browser control
 ---
 
 ## Phase 14 — Intelligence, Documents & Journal
-> The knowledge layer — where Dispatchr learns about your world
+> The knowledge layer — where Conductr learns about your world
 
 **Documents:**
 - [ ] Documents screen — save agent outputs as searchable, tagged, linkable documents
@@ -432,9 +447,9 @@ MCP (Model Context Protocol) lets agents call external tools — browser control
 ---
 
 ## Phase 15 — Multi-Provider LLM Engine
-> Use the best model for every task — Claude, GPT, Gemini, local models. No reason to ever leave Dispatchr.
+> Use the best model for every task — Claude, GPT, Gemini, local models. No reason to ever leave Conductr.
 
-This is the key unlock for never switching to another AI app. Different models excel at different things. Dispatchr should let you use any model through any agent.
+This is the key unlock for never switching to another AI app. Different models excel at different things. Conductr should let you use any model through any agent.
 
 **Provider support:**
 - [ ] Anthropic API — Claude Opus, Sonnet, Haiku (current, expand to model selector)
