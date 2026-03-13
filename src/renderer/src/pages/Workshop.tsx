@@ -113,7 +113,7 @@ function TaskDetail({
 
       {/* Activity log — driven by Workshop's consolidated listener */}
       <div>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+        <h3 className="section-label mb-3">
           Activity Log
         </h3>
         <div className="glass-surface rounded-lg p-3">

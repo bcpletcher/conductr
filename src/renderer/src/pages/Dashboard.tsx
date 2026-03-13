@@ -7,9 +7,9 @@ import type { TaskCounts, ActivityLogEntry, Document } from '../env.d'
 const api = window.electronAPI
 
 const QUICK_LINKS = [
-  { label: 'Workshop',            icon: 'fa-solid fa-gears',     page: 'workshop' as NavPage,     iconColor: '#b4abfa', iconBg: 'rgba(139,124,248,0.18)' },
-  { label: 'Client Intelligence', icon: 'fa-solid fa-brain',     page: 'intelligence' as NavPage, iconColor: '#a78bfa', iconBg: 'rgba(167,139,250,0.18)' },
-  { label: 'API Metrics',         icon: 'fa-solid fa-chart-bar', page: 'metrics' as NavPage,      iconColor: '#60a5fa', iconBg: 'rgba(96,165,250,0.18)'  },
+  { label: 'Workshop',            icon: 'fa-solid fa-gears',      page: 'workshop' as NavPage,     iconColor: '#b4abfa', iconBg: 'rgba(139,124,248,0.16)' },
+  { label: 'Client Intelligence', icon: 'fa-solid fa-brain',      page: 'intelligence' as NavPage, iconColor: '#a78bfa', iconBg: 'rgba(167,139,250,0.16)' },
+  { label: 'API Metrics',         icon: 'fa-solid fa-chart-bar',  page: 'metrics' as NavPage,      iconColor: '#60a5fa', iconBg: 'rgba(96,165,250,0.16)'  },
 ]
 
 interface DashboardProps {
@@ -20,12 +20,53 @@ function EmptyState({ icon, label }: { icon: string; label: string }): React.JSX
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-2.5">
       <div
-        className="w-10 h-10 rounded-2xl flex items-center justify-center"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center"
+        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <i className={`${icon} text-sm`} style={{ color: '#3a4068' }} />
+        <i className={`${icon} text-xs`} style={{ color: 'rgba(255,255,255,0.14)' }} />
       </div>
-      <span className="text-sm" style={{ color: '#3a4068' }}>{label}</span>
+      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.18)' }}>{label}</span>
+    </div>
+  )
+}
+
+function CardHeader({
+  icon,
+  iconColor,
+  title,
+  action,
+  onAction,
+}: {
+  icon: string
+  iconColor: string
+  title: string
+  action?: string
+  onAction?: () => void
+}): React.JSX.Element {
+  return (
+    <div
+      className="flex items-center justify-between pb-3 mb-3 flex-shrink-0"
+      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <div className="flex items-center gap-2.5">
+        <i className={`${icon} text-xs`} style={{ color: iconColor }} />
+        <h2 className="text-sm font-semibold" style={{ color: '#dde2f0' }}>{title}</h2>
+      </div>
+      {action && onAction && (
+        <button
+          onClick={onAction}
+          className="text-xs px-2.5 py-1 rounded-lg transition-all"
+          style={{
+            color: '#6ea8fe',
+            background: 'rgba(96,165,250,0.07)',
+            border: '1px solid rgba(96,165,250,0.14)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(96,165,250,0.13)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(96,165,250,0.07)' }}
+        >
+          {action}
+        </button>
+      )}
     </div>
   )
 }
@@ -57,45 +98,65 @@ export default function Dashboard({ onNavigate }: DashboardProps): React.JSX.Ele
   return (
     <div data-testid="dashboard-page" className="flex flex-col h-full gap-4">
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-shrink-0">
+      {/* ── Hero header ───────────────────────────────────────────── */}
+      <div className="flex items-start justify-between flex-shrink-0 pb-1">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Real-time overview of all systems</p>
+          <h1
+            className="font-bold tracking-tight"
+            style={{ fontSize: 22, color: '#eef0f8', letterSpacing: '-0.03em' }}
+          >
+            Dashboard
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>
+            Real-time overview of all systems
+          </p>
         </div>
+
+        {/* Status pill */}
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl mt-0.5"
-          style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.16)' }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl mt-1"
+          style={{
+            background: 'rgba(52,211,153,0.07)',
+            border: '1px solid rgba(52,211,153,0.15)',
+            backdropFilter: 'blur(12px)',
+          }}
         >
-          <span className="status-dot bg-accent-green animate-pulse" />
-          <span className="text-xs font-medium" style={{ color: '#34d399' }}>Connected</span>
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ background: '#34d399', boxShadow: '0 0 8px rgba(52,211,153,0.9)' }}
+          />
+          <span className="text-xs font-medium" style={{ color: '#34d399', letterSpacing: '0.02em' }}>
+            All systems operational
+          </span>
         </div>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-4 gap-4 flex-shrink-0">
-        <MetricCard label="Queued"       value={counts.queued}                    icon="fa-solid fa-clipboard-list" />
-        <MetricCard label="Active"       value={counts.active}  accent="blue"     icon="fa-solid fa-bolt" />
-        <MetricCard label="Completed"    value={counts.complete} accent="green"   icon="fa-solid fa-circle-check" />
+      {/* ── Metric cards ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <MetricCard label="Queued"       value={counts.queued}                  icon="fa-solid fa-clipboard-list" />
+        <MetricCard label="Active"       value={counts.active}  accent="blue"   icon="fa-solid fa-bolt" />
+        <MetricCard label="Completed"    value={counts.complete} accent="green" icon="fa-solid fa-circle-check" />
         <MetricCard label="Today's Spend" value={`$${todaySpend.toFixed(4)}`} accent="orange" icon="fa-solid fa-dollar-sign" />
       </div>
 
-      {/* Middle row — Activity + Announcements */}
-      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+      {/* ── Middle row — Activity + Announcements ─────────────────── */}
+      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+
         {/* Live Activity */}
         <div className="card p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between pb-3 mb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
-              <h2 className="text-sm font-semibold text-text-primary">Live Activity</h2>
-            </div>
-            <button
-              onClick={() => onNavigate?.('workshop')}
-              className="text-xs px-2.5 py-1 rounded-lg transition-all hover:opacity-80"
-              style={{ color: '#60a5fa', background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.15)' }}
-            >
-              View All
-            </button>
+          <CardHeader
+            icon="fa-solid fa-wave-square"
+            iconColor="#34d399"
+            title="Live Activity"
+            action="View All"
+            onAction={() => onNavigate?.('workshop')}
+          />
+          {/* Live pulse dot */}
+          <div className="flex items-center gap-1.5 mb-3 -mt-1">
+            <div className="w-1 h-1 rounded-full bg-accent-green animate-pulse" />
+            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.04em' }}>
+              LIVE
+            </span>
           </div>
           {activity.length === 0
             ? <EmptyState icon="fa-solid fa-wave-square" label="No activity yet" />
@@ -104,33 +165,27 @@ export default function Dashboard({ onNavigate }: DashboardProps): React.JSX.Ele
 
         {/* Announcements */}
         <div className="card p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between pb-3 mb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex items-center gap-2">
-              <i className="fa-solid fa-bullhorn text-xs" style={{ color: '#f472b6' }} />
-              <h2 className="text-sm font-semibold text-text-primary">Announcements</h2>
-            </div>
-          </div>
+          <CardHeader
+            icon="fa-solid fa-bullhorn"
+            iconColor="#f472b6"
+            title="Announcements"
+          />
           <EmptyState icon="fa-solid fa-bell" label="No announcements" />
         </div>
       </div>
 
-      {/* Bottom row — Recent Docs + Quick Links */}
-      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+      {/* ── Bottom row — Recent Docs + Quick Links ────────────────── */}
+      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+
         {/* Recent Documents */}
         <div className="card p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between pb-3 mb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex items-center gap-2">
-              <i className="fa-solid fa-file-lines text-xs" style={{ color: '#34d399' }} />
-              <h2 className="text-sm font-semibold text-text-primary">Recent Documents</h2>
-            </div>
-            <button
-              onClick={() => onNavigate?.('documents')}
-              className="text-xs px-2.5 py-1 rounded-lg transition-all hover:opacity-80"
-              style={{ color: '#60a5fa', background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.15)' }}
-            >
-              View All
-            </button>
-          </div>
+          <CardHeader
+            icon="fa-solid fa-file-lines"
+            iconColor="#34d399"
+            title="Recent Documents"
+            action="View All"
+            onAction={() => onNavigate?.('documents')}
+          />
           {documents.length === 0 ? (
             <EmptyState icon="fa-solid fa-folder-open" label="No documents yet" />
           ) : (
@@ -138,13 +193,16 @@ export default function Dashboard({ onNavigate }: DashboardProps): React.JSX.Ele
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  className="flex items-center justify-between py-2"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                 >
                   <div>
-                    <div className="text-sm text-text-primary">{doc.title}</div>
-                    <div className="text-xs text-text-muted">{new Date(doc.created_at).toLocaleDateString()}</div>
+                    <div className="text-sm" style={{ color: '#dde2f0' }}>{doc.title}</div>
+                    <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.26)' }}>
+                      {new Date(doc.created_at).toLocaleDateString()}
+                    </div>
                   </div>
-                  <i className="fa-solid fa-arrow-right text-text-muted text-xs" />
+                  <i className="fa-solid fa-arrow-right text-xs" style={{ color: 'rgba(255,255,255,0.18)' }} />
                 </div>
               ))}
             </div>
@@ -153,30 +211,34 @@ export default function Dashboard({ onNavigate }: DashboardProps): React.JSX.Ele
 
         {/* Quick Links */}
         <div className="card p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between pb-3 mb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex items-center gap-2">
-              <i className="fa-solid fa-bolt text-xs" style={{ color: '#fbbf24' }} />
-              <h2 className="text-sm font-semibold text-text-primary">Quick Links</h2>
-            </div>
-          </div>
+          <CardHeader
+            icon="fa-solid fa-bolt"
+            iconColor="#fbbf24"
+            title="Quick Links"
+          />
           <div className="flex flex-col gap-2">
             {QUICK_LINKS.map((link) => (
               <button
                 key={link.page}
                 onClick={() => onNavigate?.(link.page)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-primary transition-all text-left"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-left transition-all"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.035)',
                   border: '1px solid rgba(255,255,255,0.07)',
                   borderTopColor: 'rgba(255,255,255,0.10)',
+                  color: '#c4cadf',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'
+                  const el = e.currentTarget as HTMLButtonElement
+                  el.style.background = 'rgba(255,255,255,0.065)'
+                  el.style.borderColor = 'rgba(255,255,255,0.11)'
+                  el.style.color = '#eef0f8'
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.07)'
+                  const el = e.currentTarget as HTMLButtonElement
+                  el.style.background = 'rgba(255,255,255,0.035)'
+                  el.style.borderColor = 'rgba(255,255,255,0.07)'
+                  el.style.color = '#c4cadf'
                 }}
               >
                 <div
@@ -186,7 +248,10 @@ export default function Dashboard({ onNavigate }: DashboardProps): React.JSX.Ele
                   <i className={`${link.icon} text-xs`} style={{ color: link.iconColor }} />
                 </div>
                 <span>{link.label}</span>
-                <i className="fa-solid fa-chevron-right ml-auto text-xs" style={{ color: '#3a3e60' }} />
+                <i
+                  className="fa-solid fa-chevron-right ml-auto"
+                  style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)' }}
+                />
               </button>
             ))}
           </div>

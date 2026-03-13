@@ -63,9 +63,8 @@ export default function MetricCard({
       className="card p-4"
       data-testid={`metric-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
       style={{
-        background: `${CARD_GRADIENT[accent]}, rgba(14, 17, 42, 0.55)`,
         borderTop: `2px solid ${BORDER_TOP[accent]}`,
-        boxShadow: `0 1px 0 rgba(255,255,255,0.08) inset, 0 2px 16px rgba(0,0,0,0.30), 0 8px 40px rgba(0,0,0,0.20), ${CARD_GLOW[accent]}`,
+        boxShadow: `0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 16px rgba(0,0,0,0.30), 0 8px 40px rgba(0,0,0,0.20), ${CARD_GLOW[accent]}`,
       }}
     >
       <div className="flex items-start justify-between mb-3">

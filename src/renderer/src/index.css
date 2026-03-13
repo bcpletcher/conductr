@@ -1,16 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Orqis design tokens ── */
+  /* ── Design tokens ── */
 
-  /* Deep navy — the correct premium dark base */
-  --color-base:    #0d0f1e;
-  --color-surface: #13152a;
-  --color-card:    #181b2e;
-  --color-elevated:#1e2138;
+  --color-base:    #080c20;
+  --color-surface: #0d1128;
+  --color-card:    #111430;
+  --color-elevated:#171b38;
   --color-border:  rgba(255, 255, 255, 0.07);
 
-  /* Accents */
   --color-accent:        #8b7cf8;
   --color-accent-indigo: #8b7cf8;
   --color-accent-violet: #a78bfa;
@@ -21,23 +19,22 @@
   --color-accent-blue:   #60a5fa;
   --color-accent-pink:   #f472b6;
 
-  /* Text */
   --color-text-primary:   #eef0f8;
   --color-text-secondary: #a8adc8;
-  --color-text-muted:     #525878;
-  --color-text-dim:       #363a5a;
+  --color-text-muted:     #4e5480;
+  --color-text-dim:       #2e3258;
 
   --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont,
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
 
-  --radius-card: 14px;
-  --radius-xl: 18px;
-  --radius-lg: 10px;
+  --radius-card: 16px;
+  --radius-xl: 20px;
+  --radius-lg: 12px;
   --radius-md: 8px;
 }
 
-@utility w-sidebar { width: 240px; }
+@utility w-sidebar { width: 248px; }
 
 /* ── Base ── */
 @layer base {
@@ -50,22 +47,15 @@
   }
 
   body {
-    /*
-      Low-opacity tint — lets the macOS vibrancy bleed through strongly.
-      The dark hue tints the blurred desktop just enough for text legibility
-      while keeping the frosted glass look alive.
-    */
-    background:
-      radial-gradient(ellipse at 15% 15%, rgba(100, 70, 220, 0.18) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 85%, rgba(60, 40, 180, 0.14) 0%, transparent 55%),
-      rgba(6, 7, 18, 0.58);
+    /* Base: organic gradient blobs rendered by GradientBackground SVG component */
+    background: #080c20;
     color: var(--color-text-primary);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
   }
 
-  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
@@ -77,49 +67,52 @@
 
   /* ─────────────────────────────────
      CARDS
-     Elevated panels that sit above the
-     flat dark background. Depth comes
-     from border + shadow, not blur.
+     Glass panels — frosted over the
+     deep navy background. The slight
+     white tint gives "lifted" feel.
   ───────────────────────────────── */
   .card {
-    background: rgba(14, 17, 42, 0.55);
-    -webkit-backdrop-filter: blur(32px) saturate(1.8);
-    backdrop-filter: blur(32px) saturate(1.8);
+    /*
+      Semi-transparent background + heavy blur = gradient bleeds through
+      as a soft, frosted colour wash. The lower the bg opacity,
+      the more gradient you see; the higher the blur, the softer it is.
+    */
+    background: rgba(6, 8, 22, 0.42);
+    -webkit-backdrop-filter: blur(48px) saturate(1.1);
+    backdrop-filter: blur(48px) saturate(1.1);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-top-color: rgba(255, 255, 255, 0.11);
     border-radius: var(--radius-card);
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.08) inset,
-      0 2px 16px rgba(0, 0, 0, 0.30),
-      0 8px 40px rgba(0, 0, 0, 0.20);
-    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 4px 24px rgba(0, 0, 0, 0.60),
+      0 1px 3px rgba(0, 0, 0, 0.40);
+    transition: background 0.18s, border-color 0.18s;
   }
 
   .card:hover {
-    background: rgba(18, 22, 54, 0.68);
+    background: rgba(6, 8, 22, 0.50);
     border-color: rgba(255, 255, 255, 0.10);
     border-top-color: rgba(255, 255, 255, 0.16);
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.10) inset,
-      0 4px 24px rgba(0, 0, 0, 0.40),
-      0 12px 48px rgba(0, 0, 0, 0.28);
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      0 6px 32px rgba(0, 0, 0, 0.65);
   }
 
-  /* Card with a purple accent tint */
   .card-accent {
     background: linear-gradient(135deg,
-      rgba(139, 124, 248, 0.18) 0%,
-      rgba(14, 17, 42, 0.55) 55%
+      rgba(139, 124, 248, 0.14) 0%,
+      rgba(255, 255, 255, 0.03) 55%
     );
-    -webkit-backdrop-filter: blur(32px) saturate(1.8);
-    backdrop-filter: blur(32px) saturate(1.8);
-    border: 1px solid rgba(139, 124, 248, 0.24);
-    border-top-color: rgba(139, 124, 248, 0.36);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+    backdrop-filter: blur(32px) saturate(1.6);
+    border: 1px solid rgba(139, 124, 248, 0.22);
+    border-top-color: rgba(139, 124, 248, 0.32);
     border-radius: var(--radius-card);
     box-shadow:
-      0 1px 0 rgba(139,124,248,0.14) inset,
-      0 2px 16px rgba(0,0,0,0.30),
-      0 0 40px rgba(139,124,248,0.12);
+      inset 0 1px 0 rgba(139,124,248,0.12),
+      0 4px 24px rgba(0,0,0,0.38),
+      0 0 48px rgba(139,124,248,0.08);
   }
 
   /* ── Buttons ── */
@@ -127,16 +120,16 @@
     @apply text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all;
     background: linear-gradient(135deg, #8b7cf8 0%, #6654e8 100%);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.16),
-      0 0 20px rgba(139,124,248,0.28),
-      0 2px 8px rgba(0,0,0,0.30);
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      0 0 24px rgba(139,124,248,0.28),
+      0 2px 8px rgba(0,0,0,0.35);
   }
   .btn-primary:hover {
     background: linear-gradient(135deg, #9d90fa, #8b7cf8);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.20),
-      0 0 32px rgba(139,124,248,0.38),
-      0 4px 14px rgba(0,0,0,0.36);
+      inset 0 1px 0 rgba(255,255,255,0.22),
+      0 0 36px rgba(139,124,248,0.40),
+      0 4px 14px rgba(0,0,0,0.40);
     transform: translateY(-1px);
   }
   .btn-primary:active { transform: translateY(0); }
@@ -144,7 +137,7 @@
   .btn-secondary {
     @apply text-text-secondary text-sm font-medium px-4 py-2 rounded-xl transition-all;
     background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.09);
   }
   .btn-secondary:hover {
     background: rgba(255,255,255,0.09);
@@ -157,24 +150,38 @@
   /* ── Sidebar nav items ── */
   .nav-item {
     @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all cursor-pointer;
-    color: var(--color-text-muted);
+    color: rgba(255, 255, 255, 0.38);
+    font-weight: 450;
   }
   .nav-item:hover {
-    background: rgba(255,255,255,0.06);
-    color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.72);
   }
   .nav-item.active {
     color: #fff;
-    background: linear-gradient(90deg,
-      rgba(139,124,248,0.22) 0%,
-      rgba(139,124,248,0.07) 100%
-    );
-    border: 1px solid rgba(139,124,248,0.20);
+    font-weight: 500;
+    background: rgba(139, 124, 248, 0.22);
+    border: 1px solid rgba(139, 124, 248, 0.28);
     box-shadow:
-      inset 0 1px 0 rgba(139,124,248,0.12),
-      0 0 16px rgba(139,124,248,0.08);
+      inset 0 1px 0 rgba(139,124,248,0.18),
+      0 0 20px rgba(139,124,248,0.12);
   }
-  .nav-item.active i { color: #b4abfa; }
+  .nav-item.active i {
+    color: #b4abfa;
+    filter: drop-shadow(0 0 5px rgba(139,124,248,0.70));
+  }
+
+  /* ── Nav section label ── */
+  .nav-section-label {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.20);
+    padding: 0 12px;
+    margin-bottom: 4px;
+  }
 
   /* ── Layout ── */
   .page-header { @apply mb-6; }
@@ -186,25 +193,24 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.10em;
-    color: var(--color-text-dim);
+    color: rgba(255, 255, 255, 0.42);
   }
 
   /* ── Inputs ── */
   .input {
     @apply w-full px-3 py-2 rounded-xl text-sm transition-all;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
     color: var(--color-text-primary);
   }
-  .input::placeholder { color: var(--color-text-muted); }
+  .input::placeholder { color: rgba(255,255,255,0.28); }
   .input:focus {
     outline: none;
-    border-color: rgba(139,124,248,0.45);
-    background: rgba(255,255,255,0.06);
-    box-shadow: 0 0 0 3px rgba(139,124,248,0.10);
+    border-color: rgba(139,124,248,0.48);
+    background: rgba(255,255,255,0.07);
+    box-shadow: 0 0 0 3px rgba(139,124,248,0.12);
   }
 
-  /* Native select inherits .input but needs appearance reset + custom chevron */
   select.input {
     -webkit-appearance: none;
     appearance: none;
@@ -215,16 +221,15 @@
     cursor: pointer;
   }
   select.input option {
-    background: #151520;
+    background: #10122a;
     color: #f1f5f9;
   }
 
-  /* ── Glass surface (used in Workshop, Agents detail panels) ── */
   .glass-surface {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
 
   .drag-region { -webkit-app-region: drag; }

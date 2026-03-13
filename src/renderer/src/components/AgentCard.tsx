@@ -18,9 +18,8 @@ export default function AgentCard({
 
   return (
     <div
-      className={`card p-4 cursor-pointer transition-all ${
-        selected ? 'border-accent/60 bg-accent/5' : 'hover:bg-white/[0.06]'
-      }`}
+      className={`card p-4 cursor-pointer transition-all ${selected ? 'border-accent/60' : ''}`}
+      style={selected ? { background: 'rgba(139,124,248,0.12)' } : undefined}
       onClick={onClick}
     >
       <div className="flex items-start gap-3">

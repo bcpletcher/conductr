@@ -38,11 +38,12 @@ export default function Modal({
       <div
         className={`relative z-10 w-full ${width} mx-4 max-h-[85vh] flex flex-col rounded-2xl shadow-2xl`}
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.06) 100%)',
-          backdropFilter: 'blur(40px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.4)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.10), 0 24px 80px -12px rgba(0, 0, 0, 0.6)'
+          background: 'rgba(6, 8, 22, 0.72)',
+          backdropFilter: 'blur(48px) saturate(1.1)',
+          WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
+          border: '1px solid rgba(255, 255, 255, 0.09)',
+          borderTopColor: 'rgba(255, 255, 255, 0.13)',
+          boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 24px 80px -12px rgba(0, 0, 0, 0.7)'
         }}
       >
         {title && (

@@ -42,7 +42,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
       {/* System Directive */}
       {agent.system_directive && (
         <div className="mb-5">
-          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+          <h3 className="section-label mb-2">
             Hidden Directives
           </h3>
           <div className="glass-surface rounded-lg p-4 text-sm text-text-primary leading-relaxed">
@@ -54,7 +54,7 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
       {/* Operational Role */}
       {agent.operational_role && (
         <div className="mb-5">
-          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+          <h3 className="section-label mb-2">
             Operational Role
           </h3>
           <div className="glass-surface rounded-lg p-4 text-sm text-text-primary leading-relaxed">
@@ -204,7 +204,7 @@ export default function Agents(): React.JSX.Element {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Agent list */}
         <div className="w-64 flex-shrink-0 space-y-2 overflow-y-auto">
-          <div className="text-xs font-semibold text-text-muted uppercase tracking-wide px-1 mb-3">
+          <div className="section-label px-1 mb-3">
             Personnel
           </div>
           {agents.map((agent) => (

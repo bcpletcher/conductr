@@ -39,7 +39,7 @@ export default function TaskCard({ task, onClick, onStart }: TaskCardProps): Rea
   return (
     <div
       data-testid="task-card"
-      className="card p-4 cursor-pointer transition-all group hover:bg-white/[0.06]"
+      className="card p-4 cursor-pointer transition-all group"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-4">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import GradientBackground from './components/GradientBackground'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Workshop from './pages/Workshop'
@@ -41,6 +42,7 @@ export default function App(): React.JSX.Element {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden" data-testid="app">
+      <GradientBackground />
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
       <main className="flex-1 flex flex-col overflow-hidden relative" data-testid="main-content">
         {/* Invisible drag strip — sits on top, allows dragging the window from the content header area */}
