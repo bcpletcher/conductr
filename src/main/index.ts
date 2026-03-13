@@ -5,6 +5,7 @@ import { initDb } from './db/schema'
 import { registerTaskHandlers } from './ipc/tasks'
 import { registerAgentHandlers } from './ipc/agents'
 import { registerMetricsHandlers } from './ipc/metrics'
+import { registerChatHandlers } from './ipc/chat'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -122,6 +123,7 @@ app.whenReady().then(() => {
 
   if (mainWindow) {
     registerTaskHandlers(mainWindow)
+    registerChatHandlers(mainWindow)
   }
 })
 

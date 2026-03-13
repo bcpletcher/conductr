@@ -65,6 +65,14 @@ export interface TaskCounts {
   failed: number
 }
 
+export interface Message {
+  id: string
+  agent_id: string
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
+}
+
 // Window electronAPI type
 declare global {
   interface Window {
@@ -103,6 +111,15 @@ declare global {
         }>
         getUsageByTask: (limit?: number) => Promise<ApiUsageEntry[]>
         getMostActiveModel: () => Promise<string>
+      }
+      chat: {
+        getMessages: (agentId: string) => Promise<Message[]>
+        clearMessages: (agentId: string) => Promise<boolean>
+        send: (agentId: string, content: string) => void
+        onChunk: (cb: (data: { agentId: string; chunk: string }) => void) => void
+        onDone: (cb: (data: { agentId: string; message: Message }) => void) => void
+        onError: (cb: (data: { agentId: string; error: string }) => void) => void
+        removeAllListeners: () => void
       }
     }
   }

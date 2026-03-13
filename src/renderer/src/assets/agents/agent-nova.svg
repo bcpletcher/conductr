@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 140 140" width="512" height="512">
+  <circle r="64" fill="#172554"/>
+  <circle r="64" fill="none" stroke="#3B82F6" stroke-width="3.5"/>
+  <line x1="0" y1="-38" x2="0" y2="-50" stroke="#93C5FD" stroke-width="3"/>
+  <circle cx="0" cy="-53" r="5" fill="#3B82F6"/>
+  <circle cx="0" cy="-53" r="2.5" fill="white"/>
+  <rect x="-19" y="22" width="38" height="24" rx="8" fill="#BFDBFE"/>
+  <polygon points="2,27 -4,36 1,36 -5,47 10,34 3,34 8,27" fill="#F59E0B"/>
+  <rect x="-35" y="24" width="17" height="9" rx="5" fill="#93C5FD"/>
+  <ellipse cx="-35" cy="28" rx="6" ry="6" fill="#BFDBFE"/>
+  <rect x="18" y="24" width="17" height="9" rx="5" fill="#93C5FD"/>
+  <ellipse cx="35" cy="28" rx="6" ry="6" fill="#BFDBFE"/>
+  <line x1="-40" y1="-22" x2="-46" y2="-27" stroke="#FDE68A" stroke-width="2"/>
+  <line x1="-40" y1="-14" x2="-46" y2="-10" stroke="#FDE68A" stroke-width="2"/>
+  <line x1="40" y1="-22" x2="46" y2="-27" stroke="#FDE68A" stroke-width="2"/>
+  <line x1="40" y1="-14" x2="46" y2="-10" stroke="#FDE68A" stroke-width="2"/>
+  <rect x="-8" y="14" width="16" height="10" rx="4" fill="#93C5FD"/>
+  <rect x="-28" y="-38" width="56" height="54" rx="14" fill="#DBEAFE"/>
+  <rect x="-36" y="-18" width="9" height="13" rx="4" fill="#93C5FD"/>
+  <rect x="27" y="-18" width="9" height="13" rx="4" fill="#93C5FD"/>
+  <ellipse cx="-11" cy="-14" rx="11" ry="11" fill="#172554"/>
+  <ellipse cx="11" cy="-14" rx="11" ry="11" fill="#172554"/>
+  <ellipse cx="-11" cy="-14" rx="7" ry="7" fill="#3B82F6"/>
+  <ellipse cx="11" cy="-14" rx="7" ry="7" fill="#3B82F6"/>
+  <ellipse cx="-8" cy="-17" rx="3" ry="3" fill="white"/>
+  <ellipse cx="14" cy="-17" rx="3" ry="3" fill="white"/>
+  <circle cx="0" cy="-4" r="2.5" fill="#93C5FD"/>
+  <path d="M-9,4 Q0,12 9,4" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

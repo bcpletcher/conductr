@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Workshop from './pages/Workshop'
 import Agents from './pages/Agents'
+import Chat from './pages/Chat'
 import Intelligence from './pages/Intelligence'
 import Documents from './pages/Documents'
 import Metrics from './pages/Metrics'
@@ -14,6 +15,7 @@ export type NavPage =
   | 'journal'
   | 'documents'
   | 'agents'
+  | 'chat'
   | 'intelligence'
   | 'workshop'
   | 'clients'
@@ -25,6 +27,7 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   journal: Journal,
   documents: Documents,
   agents: Agents,
+  chat: Chat,
   intelligence: Intelligence,
   workshop: Workshop,
   clients: Clients,

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 140 140" width="512" height="512">
+  <circle r="64" fill="#3F0000"/>
+  <circle r="64" fill="none" stroke="#EF4444" stroke-width="3.5"/>
+  <line x1="0" y1="-38" x2="0" y2="-50" stroke="#FCA5A5" stroke-width="3"/>
+  <circle cx="0" cy="-53" r="6" fill="none" stroke="#EF4444" stroke-width="2.5"/>
+  <circle cx="0" cy="-53" r="2.5" fill="#EF4444"/>
+  <rect x="-19" y="22" width="38" height="24" rx="8" fill="#FECACA"/>
+  <path d="M0,44 L-12,37 L-12,26 L0,23 L12,26 L12,37Z" fill="#DC2626" opacity="0.25"/>
+  <path d="M0,43 L-10,36 L-10,27 L0,24 L10,27 L10,36Z" fill="none" stroke="#EF4444" stroke-width="2"/>
+  <path d="M-5,32 L-1,37 L7,26" fill="none" stroke="#4ADE80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="-35" y="24" width="17" height="9" rx="5" fill="#FCA5A5"/>
+  <ellipse cx="-35" cy="28" rx="6" ry="6" fill="#FECACA"/>
+  <rect x="18" y="24" width="17" height="9" rx="5" fill="#FCA5A5"/>
+  <ellipse cx="35" cy="28" rx="6" ry="6" fill="#FECACA"/>
+  <rect x="-8" y="14" width="16" height="10" rx="4" fill="#FCA5A5"/>
+  <rect x="-28" y="-38" width="56" height="54" rx="14" fill="#FEE2E2"/>
+  <rect x="-28" y="-38" width="56" height="15" rx="10" fill="#DC2626"/>
+  <rect x="-36" y="-18" width="9" height="13" rx="4" fill="#FCA5A5"/>
+  <rect x="27" y="-18" width="9" height="13" rx="4" fill="#FCA5A5"/>
+  <ellipse cx="-11" cy="-14" rx="11" ry="8" fill="#3F0000"/>
+  <ellipse cx="11" cy="-14" rx="11" ry="8" fill="#3F0000"/>
+  <ellipse cx="-11" cy="-14" rx="7" ry="5" fill="#EF4444"/>
+  <ellipse cx="11" cy="-14" rx="7" ry="5" fill="#EF4444"/>
+  <ellipse cx="-8" cy="-15" rx="2.5" ry="2" fill="white"/>
+  <ellipse cx="14" cy="-15" rx="2.5" ry="2" fill="white"/>
+  <line x1="-26" y1="-14" x2="26" y2="-14" stroke="#EF4444" stroke-width="1" opacity="0.35"/>
+  <circle cx="0" cy="-4" r="2.5" fill="#FCA5A5"/>
+  <line x1="-9" y1="5" x2="9" y2="5" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>
+</svg>

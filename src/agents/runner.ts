@@ -81,7 +81,7 @@ export async function runTask(
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     uuidv4(),
-    'claude-sonnet-4-5',
+    'claude-sonnet-4-6',
     result.inputTokens,
     result.outputTokens,
     result.costUsd,

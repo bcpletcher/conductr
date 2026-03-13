@@ -48,6 +48,7 @@ export function registerTaskHandlers(mainWindow: BrowserWindow): void {
 
     try {
       await runTask(taskId, onLog, onProgress)
+      mainWindow.webContents.send('tasks:statusUpdate', { taskId, status: 'complete' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       onLog(`Error: ${msg}`)

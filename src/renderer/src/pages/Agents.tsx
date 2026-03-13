@@ -3,6 +3,7 @@ import AgentCard from '../components/AgentCard'
 import ActivityFeed from '../components/ActivityFeed'
 import Modal from '../components/Modal'
 import type { Agent, ActivityLogEntry } from '../env.d'
+import { AGENT_AVATARS } from '../assets/agents'
 
 const api = window.electronAPI
 
@@ -22,8 +23,10 @@ function AgentDetail({ agent, onEdit }: AgentDetailProps): React.JSX.Element {
     <div className="flex-1 p-6 overflow-y-auto">
       {/* Avatar + name */}
       <div className="flex items-start gap-4 mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0">
-          {agent.avatar}
+        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+          {AGENT_AVATARS[agent.id]
+            ? <img src={AGENT_AVATARS[agent.id]} alt={agent.name} className="w-full h-full object-cover" />
+            : agent.avatar}
         </div>
         <div className="flex-1">
           <h2 className="text-xl font-semibold text-text-primary">{agent.name}</h2>
@@ -100,45 +103,45 @@ function AgentForm({ initial, onSubmit, onCancel }: AgentFormProps): React.JSX.E
     <form onSubmit={handleSubmit} className="p-6 space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-text-muted mb-1">Name *</label>
+          <label className="block text-xs text-text-muted mb-1.5">Name *</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Agent name"
             required
-            className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50"
+            className="input"
           />
         </div>
         <div>
-          <label className="block text-xs text-text-muted mb-1">Avatar (emoji)</label>
+          <label className="block text-xs text-text-muted mb-1.5">Avatar (emoji)</label>
           <input
             type="text"
             value={avatar}
             onChange={(e) => setAvatar(e.target.value)}
             placeholder="🤖"
-            className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50"
+            className="input"
           />
         </div>
       </div>
       <div>
-        <label className="block text-xs text-text-muted mb-1">System Directive</label>
+        <label className="block text-xs text-text-muted mb-1.5">System Directive</label>
         <textarea
           value={directive}
           onChange={(e) => setDirective(e.target.value)}
           placeholder="Core directive for this agent..."
           rows={3}
-          className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 resize-none"
+          className="input resize-none"
         />
       </div>
       <div>
-        <label className="block text-xs text-text-muted mb-1">Operational Role</label>
+        <label className="block text-xs text-text-muted mb-1.5">Operational Role</label>
         <textarea
           value={role}
           onChange={(e) => setRole(e.target.value)}
           placeholder="Describe this agent's role and responsibilities..."
           rows={3}
-          className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 resize-none"
+          className="input resize-none"
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -187,8 +190,8 @@ export default function Agents(): React.JSX.Element {
   }
 
   return (
-    <div data-testid="agents-page">
-      <div className="page-header flex items-start justify-between">
+    <div data-testid="agents-page" className="flex flex-col h-full">
+      <div className="page-header flex items-start justify-between flex-shrink-0">
         <div>
           <h1 className="page-title">Agents</h1>
           <p className="page-subtitle">Manage AI personas and directives</p>
@@ -198,7 +201,7 @@ export default function Agents(): React.JSX.Element {
         </button>
       </div>
 
-      <div className="flex gap-4 h-[calc(100vh-180px)]">
+      <div className="flex gap-4 flex-1 min-h-0">
         {/* Agent list */}
         <div className="w-64 flex-shrink-0 space-y-2 overflow-y-auto">
           <div className="text-xs font-semibold text-text-muted uppercase tracking-wide px-1 mb-3">
@@ -213,7 +216,10 @@ export default function Agents(): React.JSX.Element {
             />
           ))}
           {agents.length === 0 && (
-            <div className="text-sm text-text-muted text-center py-8">No agents yet</div>
+            <div className="flex flex-col items-center gap-2 py-10 text-text-muted">
+              <i className="fa-solid fa-robot text-text-dim text-xl" />
+              <span className="text-sm">No agents yet</span>
+            </div>
           )}
         </div>
 

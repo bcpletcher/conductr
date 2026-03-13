@@ -88,25 +88,77 @@ function createTables(db: Database.Database): void {
       description TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `)
 }
 
-function seedDefaults(db: Database.Database): void {
-  const lyraExists = db
-    .prepare('SELECT id FROM agents WHERE id = ?')
-    .get('agent-lyra')
+const DEFAULT_AGENTS = [
+  {
+    id: 'agent-lyra',
+    name: 'Lyra',
+    avatar: '✦',
+    system_directive: 'To provide the user with ultimate leverage through autonomous intelligence swarms.',
+    operational_role: 'Lead intelligence and commander of the centre. Responsible for delegating high-thrust objectives and ensuring mission success for the channel.'
+  },
+  {
+    id: 'agent-nova',
+    name: 'Nova',
+    avatar: '⚡',
+    system_directive: 'You are a versatile general-purpose AI agent. Handle a broad range of tasks with speed and precision.',
+    operational_role: 'General-purpose executor. Takes on diverse tasks that don\'t require a specialist agent.'
+  },
+  {
+    id: 'agent-scout',
+    name: 'Scout',
+    avatar: '🔍',
+    system_directive: 'You are a repository and codebase analyst. Deeply examine code, surface insights, and report findings clearly.',
+    operational_role: 'Repository analyst. Scans codebases, identifies patterns, surfaces technical debt, and informs planning decisions.'
+  },
+  {
+    id: 'agent-forge',
+    name: 'Forge',
+    avatar: '⚙️',
+    system_directive: 'You are a senior backend engineer. Write clean, performant, production-ready server-side code and infrastructure.',
+    operational_role: 'Backend engineer. Builds APIs, services, database schemas, and backend infrastructure.'
+  },
+  {
+    id: 'agent-pixel',
+    name: 'Pixel',
+    avatar: '🎨',
+    system_directive: 'You are a senior frontend engineer. Build pixel-perfect, accessible, and performant UI with clean component architecture.',
+    operational_role: 'Frontend engineer. Builds UI components, pages, and interactions with attention to design fidelity.'
+  },
+  {
+    id: 'agent-sentinel',
+    name: 'Sentinel',
+    avatar: '🛡️',
+    system_directive: 'You are a QA and security engineer. Rigorously test code, find edge cases, and flag vulnerabilities.',
+    operational_role: 'QA & security. Reviews code for bugs, writes tests, validates behaviour, and flags security issues.'
+  },
+  {
+    id: 'agent-courier',
+    name: 'Courier',
+    avatar: '📦',
+    system_directive: 'You are a delivery and release engineer. Package work for handoff, write changelogs, and manage PR submissions.',
+    operational_role: 'Delivery engineer. Creates pull requests, writes changelogs, and ensures clean handoff of completed work.'
+  }
+]
 
-  if (!lyraExists) {
-    db.prepare(`
-      INSERT INTO agents (id, name, avatar, system_directive, operational_role, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      'agent-lyra',
-      'Lyra',
-      '✦',
-      'To provide the user with ultimate leverage through autonomous intelligence swarms.',
-      'Lead intelligence and commander of the centre. Responsible for delegating high-thrust objectives and ensuring mission success for the channel.',
-      new Date().toISOString()
-    )
+function seedDefaults(db: Database.Database): void {
+  const now = new Date().toISOString()
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO agents (id, name, avatar, system_directive, operational_role, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `)
+
+  for (const agent of DEFAULT_AGENTS) {
+    insert.run(agent.id, agent.name, agent.avatar, agent.system_directive, agent.operational_role, now)
   }
 }

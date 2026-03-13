@@ -160,6 +160,17 @@ CREATE TABLE api_usage (
 );
 ```
 
+### messages
+```sql
+CREATE TABLE messages (
+  id TEXT PRIMARY KEY,
+  agent_id TEXT,
+  role TEXT,        -- 'user' | 'assistant'
+  content TEXT,
+  created_at TEXT
+);
+```
+
 ---
 
 ## IPC Architecture (Electron)

@@ -28,14 +28,14 @@ export interface ClaudeResult {
   costUsd: number
 }
 
-// Approximate cost per 1M tokens (claude-sonnet-4-5 pricing)
+// Approximate cost per 1M tokens (claude-sonnet-4-6 pricing)
 const COST_PER_1M_INPUT = 3.0
 const COST_PER_1M_OUTPUT = 15.0
 
 export async function runClaude({
   systemPrompt,
   userPrompt,
-  model = 'claude-sonnet-4-5',
+  model = 'claude-sonnet-4-6',
   maxTokens = 4096,
   onChunk
 }: RunClaudeOptions): Promise<ClaudeResult> {

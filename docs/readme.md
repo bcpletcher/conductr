@@ -25,7 +25,8 @@ Built as the **first thing you should build with OpenClaw**, it becomes smarter 
 |---|---|
 | Dashboard | Bird's-eye view of all active projects, tasks, and agents |
 | Workshop | Autonomous work queue — queue, start, and monitor tasks |
-| Agents | Manage AI personas (e.g. Jarvis) with directives and roles |
+| Agents | Manage AI personas (Lyra, Nova, Scout, Forge, Pixel, Sentinel, Courier) with directives and roles |
+| Chat | Talk to any agent with full system context — memory, tasks, and history included |
 | Intelligence | AI-generated insights, recaps, and analysis |
 | Documents | Recent files, briefs, and resources |
 | API Metrics | Real-time token usage and cost tracking |

@@ -1,4 +1,5 @@
 import type { Agent } from '../env.d'
+import { AGENT_AVATARS } from '../assets/agents'
 
 interface AgentCardProps {
   agent: Agent
@@ -13,6 +14,8 @@ export default function AgentCard({
   onClick,
   selected
 }: AgentCardProps): React.JSX.Element {
+  const svgUrl = AGENT_AVATARS[agent.id]
+
   return (
     <div
       className={`card p-4 cursor-pointer transition-all ${
@@ -21,9 +24,11 @@ export default function AgentCard({
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-xl flex-shrink-0 border border-white/[0.06]">
-          {agent.avatar}
+        {/* Avatar — SVG for default agents, emoji fallback for custom */}
+        <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-xl flex-shrink-0 border border-white/[0.06] overflow-hidden">
+          {svgUrl
+            ? <img src={svgUrl} alt={agent.name} className="w-full h-full object-cover" />
+            : agent.avatar}
         </div>
 
         {/* Info */}

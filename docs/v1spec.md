@@ -146,6 +146,53 @@ The agent dropdown in Workshop shows all available agents. Users create custom a
 
 ---
 
+### 5. Chat
+
+**Header**: Agent name + avatar | Agent switcher dropdown (right)
+
+**Layout**: Full-height split — message thread (scrollable, top) + input bar (pinned bottom)
+
+**Message Thread**:
+- User messages: right-aligned, glass bubble, accent border
+- Agent messages: left-aligned, glass card, agent avatar + name label
+- Streaming response renders with typewriter effect (token-by-token via IPC)
+- Timestamps on hover
+
+**Agent Switcher**:
+- Dropdown shows all 7 default agents + any custom agents
+- Switching agent preserves the conversation history per agent (each agent has its own thread)
+- Selected agent's system directive loads automatically — no manual prompt setup
+
+**Input Bar**:
+- Text input with `Shift+Enter` for newlines, `Enter` to send
+- Attach file button — paste code snippets or reference documents inline
+- Broadcast button — sends the message to all agents and opens a multi-column response view
+
+**Action Awareness** (chat → system):
+- Phrases like "queue that as a task" or "start the Jira workflow for MC-42" trigger in-chat confirmation chips
+- User confirms → system action executes in background (task created, workflow started, etc.)
+- Result is echoed back in the chat thread as a system message
+
+**Context Injection** (automatic):
+- Current active tasks count, recent activity log entries, and agent status are automatically included in the system prompt for each message — no user action required
+
+**Persistence**:
+- All messages stored in SQLite `messages` table with `agent_id`, `role`, `content`, `created_at`
+- Thread is restored exactly on next app launch per agent
+
+**Broadcast Mode**:
+- Toggle activates multi-column view — one column per agent
+- Single message fans out to all agents simultaneously
+- Each agent streams its response in its own column
+
+---
+
+> **Design Principle — Chat is the Primary Interface**
+>
+> The chat interface is not a support tool — it is the primary way users interact with agents. Every agent in the system is conversational by default. The goal is to eventually replace the need for external AI chat tools entirely by making Dispatchr the single place where you think, plan, build, and ship — all in one window. Unlike Claude.ai or ChatGPT, this chat already knows your agents, tasks, projects, and history. There is no re-explaining context every session.
+
+---
+
 ## UI Design Spec
 
 ### Colors

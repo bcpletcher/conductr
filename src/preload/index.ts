@@ -52,6 +52,25 @@ const api = {
     getTotalTokens: () => ipcRenderer.invoke('metrics:getTotalTokens'),
     getUsageByTask: (limit?: number) => ipcRenderer.invoke('metrics:getUsageByTask', limit),
     getMostActiveModel: () => ipcRenderer.invoke('metrics:getMostActiveModel')
+  },
+
+  // Chat
+  chat: {
+    getMessages: (agentId: string) => ipcRenderer.invoke('chat:getMessages', agentId),
+    clearMessages: (agentId: string) => ipcRenderer.invoke('chat:clearMessages', agentId),
+    send: (agentId: string, content: string) =>
+      ipcRenderer.send('chat:send', { agentId, content }),
+    onChunk: (cb: (data: { agentId: string; chunk: string }) => void) =>
+      ipcRenderer.on('chat:chunk', (_e, data) => cb(data)),
+    onDone: (cb: (data: { agentId: string; message: unknown }) => void) =>
+      ipcRenderer.on('chat:done', (_e, data) => cb(data)),
+    onError: (cb: (data: { agentId: string; error: string }) => void) =>
+      ipcRenderer.on('chat:error', (_e, data) => cb(data)),
+    removeAllListeners: () => {
+      ipcRenderer.removeAllListeners('chat:chunk')
+      ipcRenderer.removeAllListeners('chat:done')
+      ipcRenderer.removeAllListeners('chat:error')
+    }
   }
 }
 

@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard',    label: 'Dashboard',    icon: 'fa-solid fa-house' },
   { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
   { id: 'agents',       label: 'Agents',       icon: 'fa-solid fa-robot' },
+  { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
   { id: 'intelligence', label: 'Intelligence', icon: 'fa-solid fa-brain' },
   { id: 'documents',    label: 'Documents',    icon: 'fa-solid fa-file-lines' },
   { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
@@ -107,7 +108,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
             WebkitAppRegion: 'no-drag',
           } as React.CSSProperties}
         >
-          <div className="text-xs" style={{ color: '#363a5a' }}>v0.1.0 · Phase 0</div>
+          <div className="text-xs" style={{ color: '#363a5a' }}>v0.1.0 · Phase 8</div>
         </div>
       </aside>
   )
