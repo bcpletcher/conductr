@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures'
 
 const NAV_PAGES = [
-  { id: 'dashboard', title: 'Mission Control' },
+  { id: 'dashboard', title: 'Dashboard' },
   { id: 'journal', title: 'Journal' },
   { id: 'documents', title: 'Documents' },
   { id: 'agents', title: 'Agents' },
@@ -17,7 +17,8 @@ test.describe('Navigation', () => {
       await page.click(`[data-testid="nav-${id}"]`)
       const pageEl = page.locator(`[data-testid="${id}-page"]`)
       await expect(pageEl).toBeVisible()
-      await expect(pageEl.getByText(title)).toBeVisible()
+      // Use heading role to avoid matching text that appears in body/stub content
+      await expect(pageEl.getByRole('heading', { name: title })).toBeVisible()
     })
   }
 })

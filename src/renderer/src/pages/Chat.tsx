@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Agent, Message } from '../env.d'
 import { AGENT_AVATARS } from '../assets/agents'
+import MarkdownRenderer from '../components/MarkdownRenderer'
 
 const api = window.electronAPI
 
-// ── Avatar helper ──────────────────────────────────────────────────────────────
+// Rough token estimate: 4 chars ≈ 1 token
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
+// ── Avatar helper ──────────────────────────────────────────────────────────
 interface AvatarProps {
   agent: Agent
   size?: 'sm' | 'md' | 'lg'
@@ -28,7 +34,7 @@ function AgentAvatar({ agent, size = 'md' }: AvatarProps): React.JSX.Element {
   )
 }
 
-// ── Typing indicator ───────────────────────────────────────────────────────────
+// ── Typing indicator ───────────────────────────────────────────────────────
 function TypingDots(): React.JSX.Element {
   return (
     <span className="inline-flex items-center gap-1">
@@ -43,7 +49,39 @@ function TypingDots(): React.JSX.Element {
   )
 }
 
-// ── Message bubble ─────────────────────────────────────────────────────────────
+// ── Context meter ──────────────────────────────────────────────────────────
+interface ContextMeterProps {
+  messages: Message[]
+  streamContent: string
+}
+
+function ContextMeter({ messages, streamContent }: ContextMeterProps): React.JSX.Element {
+  const totalChars = messages.reduce((s, m) => s + m.content.length, 0) + streamContent.length
+  const tokens = estimateTokens(totalChars > 0 ? String(totalChars) : '')
+  const totalTokens = messages.reduce((s, m) => s + estimateTokens(m.content), 0)
+  const maxContext = 200000
+
+  const pct = Math.min((totalTokens / maxContext) * 100, 100)
+  const barColor = pct > 80 ? '#f87171' : pct > 60 ? '#fb923c' : '#34d399'
+
+  if (messages.length === 0) return <></>
+
+  return (
+    <div className="flex items-center gap-2" title={`~${totalTokens.toLocaleString()} tokens used`}>
+      <span className="text-xs tabular-nums" style={{ color: '#64748b' }}>
+        ~{totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}k` : totalTokens} tok
+      </span>
+      <div className="w-16 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${pct}%`, background: barColor }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── Message bubble ─────────────────────────────────────────────────────────
 interface BubbleProps {
   msg: Message
   agent: Agent | null
@@ -54,12 +92,13 @@ function MessageBubble({ msg, agent }: BubbleProps): React.JSX.Element {
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-4">
         <div
           className="max-w-[72%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm text-text-primary leading-relaxed"
           style={{
             background: 'rgba(99,102,241,0.18)',
             border: '1px solid rgba(99,102,241,0.28)',
+            whiteSpace: 'pre-wrap',
           }}
         >
           {msg.content}
@@ -69,27 +108,27 @@ function MessageBubble({ msg, agent }: BubbleProps): React.JSX.Element {
   }
 
   return (
-    <div className="flex items-start gap-2.5 mb-3">
+    <div className="flex items-start gap-2.5 mb-4">
       {agent && <AgentAvatar agent={agent} size="sm" />}
       <div className="flex-1 min-w-0">
         {agent && (
-          <div className="text-xs text-text-muted mb-1 font-medium">{agent.name}</div>
+          <div className="text-xs text-text-muted mb-1.5 font-medium">{agent.name}</div>
         )}
         <div
-          className="inline-block max-w-full px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm text-text-primary leading-relaxed whitespace-pre-wrap"
+          className="inline-block max-w-full px-4 py-3 rounded-2xl rounded-tl-sm"
           style={{
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.07)',
           }}
         >
-          {msg.content}
+          <MarkdownRenderer content={msg.content} />
         </div>
       </div>
     </div>
   )
 }
 
-// ── Streaming bubble ───────────────────────────────────────────────────────────
+// ── Streaming bubble ───────────────────────────────────────────────────────
 interface StreamingBubbleProps {
   content: string
   agent: Agent | null
@@ -97,14 +136,14 @@ interface StreamingBubbleProps {
 
 function StreamingBubble({ content, agent }: StreamingBubbleProps): React.JSX.Element {
   return (
-    <div className="flex items-start gap-2.5 mb-3">
+    <div className="flex items-start gap-2.5 mb-4">
       {agent && <AgentAvatar agent={agent} size="sm" />}
       <div className="flex-1 min-w-0">
         {agent && (
-          <div className="text-xs text-text-muted mb-1 font-medium">{agent.name}</div>
+          <div className="text-xs text-text-muted mb-1.5 font-medium">{agent.name}</div>
         )}
         <div
-          className="inline-block max-w-full px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm text-text-primary leading-relaxed whitespace-pre-wrap"
+          className="inline-block max-w-full px-4 py-3 rounded-2xl rounded-tl-sm"
           style={{
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.07)',
@@ -113,9 +152,9 @@ function StreamingBubble({ content, agent }: StreamingBubbleProps): React.JSX.El
           {content
             ? (
               <>
-                {content}
+                <MarkdownRenderer content={content} />
                 <span
-                  className="inline-block w-0.5 h-[1em] bg-accent-indigo ml-0.5 align-middle animate-pulse"
+                  className="inline-block w-0.5 h-[0.9em] bg-accent ml-0.5 align-middle animate-pulse"
                 />
               </>
             )
@@ -126,7 +165,7 @@ function StreamingBubble({ content, agent }: StreamingBubbleProps): React.JSX.El
   )
 }
 
-// ── Empty state ────────────────────────────────────────────────────────────────
+// ── Empty state ────────────────────────────────────────────────────────────
 function EmptyThread({ agent }: { agent: Agent | null }): React.JSX.Element {
   if (!agent) {
     return (
@@ -153,7 +192,7 @@ function EmptyThread({ agent }: { agent: Agent | null }): React.JSX.Element {
   )
 }
 
-// ── Main Chat page ─────────────────────────────────────────────────────────────
+// ── Main Chat page ─────────────────────────────────────────────────────────
 export default function Chat(): React.JSX.Element {
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
@@ -163,6 +202,12 @@ export default function Chat(): React.JSX.Element {
   const [streamContent, setStreamContent] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Total estimated tokens across all messages
+  const totalTokens = useMemo(
+    () => messages.reduce((s, m) => s + estimateTokens(m.content), 0),
+    [messages]
+  )
 
   // Load agents on mount
   useEffect(() => {
@@ -277,7 +322,12 @@ export default function Chat(): React.JSX.Element {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Context meter */}
+          {messages.length > 0 && (
+            <ContextMeter messages={messages} streamContent={streamContent} />
+          )}
+
           {/* Agent switcher */}
           <select
             value={selectedAgent?.id ?? ''}

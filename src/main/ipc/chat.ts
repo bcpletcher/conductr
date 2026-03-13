@@ -1,6 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { getMessages, addMessage, clearMessages } from '../db/messages'
 import { getAgentById } from '../db/agents'
+import { getTaskCounts, getTasksByStatus } from '../db/tasks'
 import { getAnthropicClient } from '../../api/claude'
 
 export function registerChatHandlers(win: BrowserWindow): void {
@@ -23,12 +24,31 @@ export function registerChatHandlers(win: BrowserWindow): void {
     // Build agent system prompt
     const agent = getAgentById(agentId)
     const agentName = agent?.name ?? 'Assistant'
+
+    // Inject live Dispatchr context so agents are aware of system state
+    const counts = getTaskCounts()
+    const activeTasks = getTasksByStatus('active').slice(0, 3)
+    const recentComplete = getTasksByStatus('complete').slice(0, 3)
+
+    const liveContext = [
+      '## Dispatchr Live Context',
+      `Active tasks: ${counts.active} | Queued: ${counts.queued} | Completed: ${counts.complete} | Failed: ${counts.failed}`,
+      activeTasks.length > 0
+        ? `Currently running: ${activeTasks.map((t) => `"${t.title}"`).join(', ')}`
+        : 'No tasks currently running.',
+      recentComplete.length > 0
+        ? `Recently completed: ${recentComplete.map((t) => `"${t.title}"`).join(', ')}`
+        : 'No completed tasks yet.',
+    ].join('\n')
+
     const systemPrompt = [
       agent?.system_directive ?? `You are ${agentName}, a helpful AI assistant.`,
       '',
       `Your name is ${agentName}. Stay in character. Be helpful, direct, and concise.`,
       'You are aware of the Dispatchr platform — an AI operations layer where agents manage tasks, documents, and workflows.',
-      'When the user asks to "queue a task", "create a task", or similar, acknowledge you can help and ask for details if needed.'
+      'When the user asks to "queue a task", "create a task", or similar, acknowledge you can help and ask for details if needed.',
+      '',
+      liveContext,
     ].join('\n')
 
     // Build message history (last 40 turns) for Claude context

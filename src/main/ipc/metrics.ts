@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { getDb } from '../db/schema'
+import { getSetting, setSetting } from '../db/settings'
 
 export function registerMetricsHandlers(): void {
   ipcMain.handle('metrics:getTodaySpend', () => {
@@ -27,6 +28,18 @@ export function registerMetricsHandlers(): void {
       )
       .all()
     return result
+  })
+
+  ipcMain.handle('metrics:getMonthlySpend', () => {
+    const thisMonth = new Date().toISOString().substring(0, 7) // e.g. "2026-03"
+    const result = getDb()
+      .prepare(
+        `SELECT COALESCE(SUM(cost_usd), 0) as total
+         FROM api_usage
+         WHERE timestamp LIKE ?`
+      )
+      .get(`${thisMonth}%`) as { total: number }
+    return result.total
   })
 
   ipcMain.handle('metrics:getTotalTokens', () => {
@@ -69,6 +82,44 @@ export function registerMetricsHandlers(): void {
          LIMIT 1`
       )
       .get() as { model: string; count: number } | undefined
-    return result?.model || 'claude-sonnet-4-5'
+    return result?.model || 'claude-sonnet-4-6'
+  })
+
+  // ── Budget settings ──────────────────────────────────────────────────────────
+  ipcMain.handle('metrics:getBudget', () => {
+    const daily = getSetting('budget_daily')
+    const monthly = getSetting('budget_monthly')
+    return {
+      daily: daily ? parseFloat(daily) : null,
+      monthly: monthly ? parseFloat(monthly) : null
+    }
+  })
+
+  ipcMain.handle('metrics:setBudget', (
+    _,
+    { daily, monthly }: { daily: number | null; monthly: number | null }
+  ) => {
+    setSetting('budget_daily', daily !== null && daily !== undefined ? String(daily) : '')
+    setSetting('budget_monthly', monthly !== null && monthly !== undefined ? String(monthly) : '')
+    return true
+  })
+
+  // ── Per-agent spend breakdown (last 30 days) ─────────────────────────────────
+  ipcMain.handle('metrics:getAgentSpend', () => {
+    return getDb()
+      .prepare(
+        `SELECT
+          au.agent_id,
+          a.name   AS agent_name,
+          a.avatar AS agent_avatar,
+          COALESCE(SUM(au.input_tokens + au.output_tokens), 0) AS total_tokens,
+          COALESCE(SUM(au.cost_usd), 0)                        AS total_cost
+         FROM api_usage au
+         LEFT JOIN agents a ON au.agent_id = a.id
+         WHERE au.timestamp >= datetime('now', '-30 days')
+         GROUP BY au.agent_id
+         ORDER BY total_cost DESC`
+      )
+      .all()
   })
 }

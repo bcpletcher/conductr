@@ -16,7 +16,8 @@ test.describe('Workshop', () => {
     await page.click('text=+ New Task')
     const modal = page.locator('[data-testid="modal-overlay"]')
     await expect(modal).toBeVisible()
-    await expect(page.getByText('New Task')).toBeVisible()
+    // Scope to modal heading to avoid matching the "New Task" button also on the page
+    await expect(modal.getByRole('heading', { name: 'New Task' })).toBeVisible()
   })
 
   test('creates a task via the modal form', async ({ page }) => {
@@ -25,7 +26,7 @@ test.describe('Workshop', () => {
     await page.click('text=Queue Task')
     // Modal should close
     await expect(page.locator('[data-testid="modal-overlay"]')).not.toBeVisible()
-    // Task should appear in the list
-    await expect(page.locator('[data-testid="task-card"]').getByText('E2E Test Task')).toBeVisible()
+    // Task should appear in the list (use .first() since prior runs may have left duplicates in DB)
+    await expect(page.locator('[data-testid="task-card"]').getByText('E2E Test Task').first()).toBeVisible()
   })
 })

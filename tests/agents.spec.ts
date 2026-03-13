@@ -7,11 +7,14 @@ test.describe('Agents', () => {
   })
 
   test('Lyra agent is pre-seeded and visible', async ({ page }) => {
-    await expect(page.getByText('Lyra')).toBeVisible()
+    // Use h3 to scope to the agent list sidebar item specifically
+    await expect(page.getByRole('heading', { name: 'Lyra', level: 3 })).toBeVisible()
   })
 
   test('agent detail shows when selected', async ({ page }) => {
-    // Lyra should auto-select as first agent
-    await expect(page.getByText('Hidden Directives').or(page.getByText('Operational Role'))).toBeVisible()
+    // Lyra should auto-select as first agent — either section label is present
+    await expect(
+      page.getByText('Hidden Directives').or(page.getByText('Operational Role')).first()
+    ).toBeVisible()
   })
 })

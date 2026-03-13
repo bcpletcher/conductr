@@ -49,6 +49,19 @@ export interface ApiUsageEntry {
   agent_name?: string
 }
 
+export interface AgentSpendEntry {
+  agent_id: string | null
+  agent_name: string | null
+  agent_avatar: string | null
+  total_tokens: number
+  total_cost: number
+}
+
+export interface Budget {
+  daily: number | null
+  monthly: number | null
+}
+
 export interface Document {
   id: string
   title: string
@@ -104,6 +117,7 @@ declare global {
       metrics: {
         getTodaySpend: () => Promise<number>
         get7DaySpend: () => Promise<{ date: string; total: number }[]>
+        getMonthlySpend: () => Promise<number>
         getTotalTokens: () => Promise<{
           input_tokens: number
           output_tokens: number
@@ -111,6 +125,9 @@ declare global {
         }>
         getUsageByTask: (limit?: number) => Promise<ApiUsageEntry[]>
         getMostActiveModel: () => Promise<string>
+        getBudget: () => Promise<Budget>
+        setBudget: (data: { daily: number | null; monthly: number | null }) => Promise<boolean>
+        getAgentSpend: () => Promise<AgentSpendEntry[]>
       }
       chat: {
         getMessages: (agentId: string) => Promise<Message[]>

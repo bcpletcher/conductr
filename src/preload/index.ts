@@ -49,9 +49,14 @@ const api = {
   metrics: {
     getTodaySpend: () => ipcRenderer.invoke('metrics:getTodaySpend'),
     get7DaySpend: () => ipcRenderer.invoke('metrics:get7DaySpend'),
+    getMonthlySpend: () => ipcRenderer.invoke('metrics:getMonthlySpend'),
     getTotalTokens: () => ipcRenderer.invoke('metrics:getTotalTokens'),
     getUsageByTask: (limit?: number) => ipcRenderer.invoke('metrics:getUsageByTask', limit),
-    getMostActiveModel: () => ipcRenderer.invoke('metrics:getMostActiveModel')
+    getMostActiveModel: () => ipcRenderer.invoke('metrics:getMostActiveModel'),
+    getBudget: () => ipcRenderer.invoke('metrics:getBudget'),
+    setBudget: (data: { daily: number | null; monthly: number | null }) =>
+      ipcRenderer.invoke('metrics:setBudget', data),
+    getAgentSpend: () => ipcRenderer.invoke('metrics:getAgentSpend')
   },
 
   // Chat
