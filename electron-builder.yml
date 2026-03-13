@@ -1,5 +1,5 @@
-appId: com.orqis.app
-productName: Orqis
+appId: com.dispatchr.app
+productName: Dispatchr
 copyright: Copyright © 2024
 
 directories:
@@ -21,7 +21,7 @@ mac:
   minimumSystemVersion: '12.0'
 
 dmg:
-  title: Orqis
+  title: Dispatchr
   window:
     width: 540
     height: 380

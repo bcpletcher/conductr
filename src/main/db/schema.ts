@@ -12,7 +12,7 @@ export function getDb(): Database.Database {
 }
 
 export function initDb(): Database.Database {
-  const dbPath = path.join(app.getPath('userData'), 'orqis.db')
+  const dbPath = path.join(app.getPath('userData'), 'dispatchr.db')
   db = new Database(dbPath)
 
   db.pragma('journal_mode = WAL')

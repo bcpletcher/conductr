@@ -16,8 +16,9 @@ function createWindow(): void {
     minHeight: 700,
     show: false,
     titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 18, y: 22 },
     vibrancy: 'under-window',
-    backgroundColor: '#0a0a0f',
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -46,11 +47,11 @@ function createWindow(): void {
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'Orqis',
+      label: 'Dispatchr',
       submenu: [
-        { label: 'About Orqis', role: 'about' },
+        { label: 'About Dispatchr', role: 'about' },
         { type: 'separator' },
-        { label: 'Hide Orqis', role: 'hide' },
+        { label: 'Hide Dispatchr', role: 'hide' },
         { label: 'Hide Others', role: 'hideOthers' },
         { label: 'Show All', role: 'unhide' },
         { type: 'separator' },

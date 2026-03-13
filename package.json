@@ -1,7 +1,7 @@
 {
-  "name": "orqis",
+  "name": "dispatchr",
   "version": "0.1.0",
-  "description": "Orqis — autonomous AI orchestration platform",
+  "description": "Dispatchr — autonomous AI dispatch and orchestration platform",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -14,6 +14,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@fontsource-variable/inter": "^5.2.8",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "better-sqlite3": "^9.4.3",
     "recharts": "^2.12.7",

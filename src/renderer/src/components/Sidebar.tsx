@@ -28,74 +28,87 @@ const BOTTOM_ITEMS: NavItem[] = [
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {
   return (
+    /* Flush with window left/top/bottom edges; only right corners rounded to match macOS window radius */
     <aside
       data-testid="sidebar"
-      className="w-sidebar flex-shrink-0 flex flex-col h-full border-r"
+      className="flex-shrink-0 flex flex-col overflow-hidden"
       style={{
-        background: '#0e1020',
-        borderColor: 'rgba(255,255,255,0.06)',
+        width: 256,
+        background: 'rgba(8, 10, 26, 0.62)',
+        WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
+        backdropFilter: 'blur(48px) saturate(1.8)',
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        borderTopRightRadius: 20,
+        borderBottomRightRadius: 20,
         WebkitAppRegion: 'drag',
       } as React.CSSProperties}
     >
-      {/* Logo — padded for macOS traffic lights */}
-      <div className="pt-8 pb-5 px-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #7c6ef5, #5b4de8)',
-              boxShadow: '0 0 16px rgba(124,110,245,0.35), 0 2px 6px rgba(0,0,0,0.4)'
-            }}
-          >
-            <i className="fa-solid fa-rocket text-white text-xs" />
-          </div>
-          <div>
-            <div className="text-sm font-bold text-white leading-tight">Orqis</div>
-            <div className="text-[10px] uppercase tracking-widest" style={{ color: '#5c6285' }}>Autonomous AI</div>
+        {/* Logo — top padding accounts for trafficLightPosition y:22 + button height ~14px = 36px, we use 44px */}
+        <div className="pt-11 pb-5 px-5">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #8b7cf8, #5b4de8)',
+                boxShadow: '0 0 18px rgba(139,124,248,0.38), 0 2px 6px rgba(0,0,0,0.4)',
+              }}
+            >
+              <i className="fa-solid fa-rocket text-white text-xs" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white leading-tight">Dispatchr</div>
+              <div className="section-label mt-0.5" style={{ color: '#4e5480' }}>Autonomous AI</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main nav */}
-      <nav
-        className="flex-1 px-3 overflow-y-auto space-y-0.5"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        <div className="section-label px-3 mb-2">Navigation</div>
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            data-testid={`nav-${item.id}`}
-            className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-          >
-            <i className={`${item.icon} text-sm w-4 text-center flex-shrink-0`} />
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {/* Nav */}
+        <nav
+          className="flex-1 px-3 overflow-y-auto"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <div className="section-label px-3 mb-2">Navigation</div>
+          <div className="space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
+              >
+                <i className={`${item.icon} text-sm w-4 text-center flex-shrink-0`} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
 
-        <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }} />
+          <div className="my-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }} />
 
-        {BOTTOM_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            data-testid={`nav-${item.id}`}
-            className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-          >
-            <i className={`${item.icon} text-sm w-4 text-center flex-shrink-0`} />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+          <div className="space-y-0.5">
+            {BOTTOM_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
+              >
+                <i className={`${item.icon} text-sm w-4 text-center flex-shrink-0`} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
 
-      {/* Footer */}
-      <div
-        className="px-5 py-4"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.05)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        <div className="text-xs" style={{ color: '#3d4166' }}>v0.1.0 · Phase 0</div>
-      </div>
-    </aside>
+        {/* Footer */}
+        <div
+          className="px-5 py-4"
+          style={{
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            WebkitAppRegion: 'no-drag',
+          } as React.CSSProperties}
+        >
+          <div className="text-xs" style={{ color: '#363a5a' }}>v0.1.0 · Phase 0</div>
+        </div>
+      </aside>
   )
 }
