@@ -30,8 +30,33 @@ const SYSTEM_ITEMS: NavItemDef[] = [
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {
   const notifications  = useUIStore((s) => s.notifications)
   const openNotifPanel = useUIStore((s) => s.openNotifPanel)
+  const openSearch     = useUIStore((s) => s.openSearch)
   const accentColor    = useUIStore((s) => s.accentColor)
   const unreadCount    = notifications.filter((n) => !n.read).length
+  const navRef         = useRef<HTMLElement>(null)
+
+  /**
+   * Arrow-key navigation within the sidebar nav.
+   * Collects all focusable buttons inside the <nav>, then moves focus up/down.
+   */
+  function handleNavKeyDown(e: React.KeyboardEvent<HTMLElement>): void {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const nav = navRef.current
+    if (!nav) return
+    const buttons = Array.from(nav.querySelectorAll('button')) as HTMLElement[]
+    const idx = buttons.indexOf(document.activeElement as HTMLElement)
+    if (idx === -1) {
+      // Nothing focused yet — focus first item
+      buttons[0]?.focus()
+      return
+    }
+    e.preventDefault()
+    if (e.key === 'ArrowDown') {
+      buttons[Math.min(idx + 1, buttons.length - 1)]?.focus()
+    } else {
+      buttons[Math.max(idx - 1, 0)]?.focus()
+    }
+  }
 
   const [showPopover, setShowPopover] = useState(false)
   const [popoverPos,  setPopoverPos]  = useState({ top: 0, left: 0 })
@@ -107,23 +132,29 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
       >
         {/* ── Logo + bell header ──────────────────────────────── */}
         <div
-          ref={headerRef}
           className="pt-10 pb-4 px-5"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           onMouseEnter={showPop}
           onMouseLeave={hidePop}
         >
-          <div className="flex items-center gap-3 cursor-default select-none">
-            {/* Avatar */}
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          {/* Hover card — highlights on mouse-enter; ref used to anchor the popover */}
+          <div
+            ref={headerRef}
+            className="flex items-center gap-3 cursor-default select-none rounded-xl px-2 py-1.5 transition-all"
+            style={{
+              background: showPopover ? 'rgba(129,140,248,0.08)' : 'transparent',
+              border: `1px solid ${showPopover ? 'rgba(129,140,248,0.15)' : 'transparent'}`,
+            }}
+          >
+            {/* Avatar — conductr.webp */}
+            <img
+              src="./conductr.webp"
+              alt="Conductr"
+              className="w-9 h-9 rounded-xl flex-shrink-0 object-cover"
               style={{
-                background: `linear-gradient(145deg, ${accentColor}cc 0%, ${accentColor} 100%)`,
-                boxShadow: `0 0 22px ${accentColor}80, 0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25)`,
+                boxShadow: `0 0 18px ${accentColor}50, 0 2px 8px rgba(0,0,0,0.55)`,
               }}
-            >
-              <i className="fa-solid fa-rocket text-white" style={{ fontSize: 12 }} />
-            </div>
+            />
 
             {/* Name + status */}
             <div className="flex-1 min-w-0">
@@ -176,13 +207,16 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
                 </span>
               )}
             </button>
-          </div>
+          </div>{/* end hover card */}
         </div>
 
         {/* ── Navigation ────────────────────────────────────────── */}
         <nav
+          ref={navRef}
+          aria-label="Main navigation"
           className="flex-1 px-3 overflow-y-auto"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          onKeyDown={handleNavKeyDown}
         >
           <span className="nav-section-label" style={{ marginTop: 4 }}>Navigation</span>
 
@@ -199,6 +233,29 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
               </button>
             ))}
           </div>
+
+          {/* Search trigger */}
+          <button
+            data-testid="search-trigger"
+            onClick={openSearch}
+            className="nav-item w-full text-left"
+            style={{ marginTop: 4 }}
+            title="Search (⌘⇧F)"
+          >
+            <i className="fa-solid fa-magnifying-glass w-4 text-center flex-shrink-0" style={{ fontSize: 12 }} />
+            <span style={{ flex: 1 }}>Search</span>
+            <kbd
+              style={{
+                padding: '1px 5px', borderRadius: 4,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                fontSize: 10, color: 'rgba(255,255,255,0.28)',
+                fontFamily: 'inherit', letterSpacing: 0,
+              }}
+            >
+              ⌘⇧F
+            </kbd>
+          </button>
 
           {/* Divider */}
           <div

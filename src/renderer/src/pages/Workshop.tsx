@@ -151,9 +151,21 @@ function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): Reac
       {BOARD_COLUMNS.map((col) => {
         const colTasks = tasks.filter((t) => t.status === col.status)
         return (
-          <div key={col.status} className="flex flex-col" style={{ minWidth: 240, flex: '1 1 0' }}>
+          <div
+            key={col.status}
+            className="flex flex-col rounded-2xl p-3"
+            style={{
+              minWidth: 240, flex: '1 1 0',
+              background: 'rgba(6, 8, 22, 0.55)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderTopColor: 'rgba(255,255,255,0.11)',
+              backdropFilter: 'blur(40px) saturate(1.1)',
+              WebkitBackdropFilter: 'blur(40px) saturate(1.1)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(0,0,0,0.50)',
+            }}
+          >
             {/* Column header */}
-            <div className="flex items-center justify-between mb-2 px-0.5">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <i
                   className={`fa-solid ${col.icon} text-xs`}
@@ -178,7 +190,7 @@ function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): Reac
             {/* Card stack */}
             <div
               className="flex flex-col gap-2 overflow-y-auto pr-0.5"
-              style={{ maxHeight: 'calc(100vh - 260px)' }}
+              style={{ maxHeight: 'calc(100vh - 280px)' }}
             >
               {colTasks.length === 0 ? (
                 <div
@@ -548,7 +560,7 @@ export default function Workshop(): React.JSX.Element {
   }
 
   return (
-    <div data-testid="workshop-page">
+    <div data-testid="workshop-page" className="flex flex-col h-full">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="page-header flex items-start justify-between">
         <div>

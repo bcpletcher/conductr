@@ -4,6 +4,80 @@ import { WALLPAPER_PRESETS } from '../constants/wallpapers'
 
 const api = window.electronAPI
 
+// ── Toggle switch component ───────────────────────────────────────────────────
+function ToggleSwitch({
+  checked,
+  onChange,
+  accent,
+  testid,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  accent: string
+  testid?: string
+}): React.JSX.Element {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      data-testid={testid}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 40,
+        height: 22,
+        borderRadius: 11,
+        background: checked ? accent : 'rgba(255,255,255,0.12)',
+        border: 'none',
+        cursor: 'pointer',
+        position: 'relative',
+        transition: 'background 0.2s',
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: 2,
+          left: checked ? 20 : 2,
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+          transition: 'left 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          display: 'block',
+        }}
+      />
+    </button>
+  )
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+  accent,
+  testid,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (v: boolean) => void
+  accent: string
+  testid?: string
+}): React.JSX.Element {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+        <p className="text-sm text-text-primary">{label}</p>
+        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>{description}</p>
+      </div>
+      <ToggleSwitch checked={checked} onChange={onChange} accent={accent} testid={testid} />
+    </div>
+  )
+}
+
 const ACCENT_COLORS = [
   { name: 'Indigo',   value: '#8b7cf8' },
   { name: 'Violet',   value: '#a78bfa' },
@@ -27,6 +101,12 @@ export default function Settings(): React.JSX.Element {
   const [saving, setSaving]    = useState(false)
   const [saved,  setSaved]     = useState(false)
 
+  // Notification preferences
+  const [notifMode,          setNotifMode]          = useState<'always' | 'background' | 'never'>('always')
+  const [notifTaskComplete,  setNotifTaskComplete]  = useState(true)
+  const [notifTaskFailed,    setNotifTaskFailed]    = useState(true)
+  const [notifBudgetAlert,   setNotifBudgetAlert]   = useState(false)
+
   // Brightness only matters when an image wallpaper is active
   const hasImage = wallpaperStyle === 'default' || wallpaperStyle === 'custom'
 
@@ -46,6 +126,18 @@ export default function Settings(): React.JSX.Element {
     })
     api.settings.get('wallpaper_custom').then((val) => {
       if (val) setCustomWallpaperPath(val)
+    })
+    api.settings.get('notif_mode').then((val) => {
+      if (val === 'always' || val === 'background' || val === 'never') setNotifMode(val)
+    })
+    api.settings.get('notif_task_complete').then((val) => {
+      if (val !== null) setNotifTaskComplete(val === '1')
+    })
+    api.settings.get('notif_task_failed').then((val) => {
+      if (val !== null) setNotifTaskFailed(val === '1')
+    })
+    api.settings.get('notif_budget_alert').then((val) => {
+      if (val !== null) setNotifBudgetAlert(val === '1')
     })
   }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath])
 
@@ -73,6 +165,20 @@ export default function Settings(): React.JSX.Element {
   async function saveWallpaperStyle(style: string): Promise<void> {
     setWallpaperStyle(style)
     await api.settings.set('wallpaper_style', style)
+  }
+
+  async function saveNotifMode(mode: 'always' | 'background' | 'never'): Promise<void> {
+    setNotifMode(mode)
+    await api.settings.set('notif_mode', mode)
+  }
+
+  async function saveNotifEvent(
+    key: string,
+    value: boolean,
+    setter: (v: boolean) => void,
+  ): Promise<void> {
+    setter(value)
+    await api.settings.set(key, value ? '1' : '0')
   }
 
   async function handlePickCustomWallpaper(): Promise<void> {
@@ -372,6 +478,88 @@ export default function Settings(): React.JSX.Element {
             )}
           </>
         )}
+      </section>
+
+      {/* ── Notifications ───────────────────────────────── */}
+      <section className="card p-5 mb-4" data-testid="notif-section">
+        <h2 className="text-sm font-semibold text-text-primary mb-5">Notifications</h2>
+
+        {/* Notification mode */}
+        <div className="mb-5">
+          <div className="mb-3">
+            <p className="text-sm text-text-primary">Notification mode</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>
+              Control when the app sends native OS notifications
+            </p>
+          </div>
+          <div
+            className="flex rounded-xl overflow-hidden"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              width: 'fit-content',
+            }}
+            data-testid="notif-mode-toggle"
+          >
+            {(['always', 'background', 'never'] as const).map((mode) => (
+              <button
+                key={mode}
+                data-testid={`notif-mode-${mode}`}
+                onClick={() => saveNotifMode(mode)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  letterSpacing: '-0.01em',
+                  background: notifMode === mode ? 'var(--color-accent)' : 'transparent',
+                  color: notifMode === mode ? '#fff' : 'rgba(255,255,255,0.46)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {mode === 'background' ? 'Background only' : mode === 'always' ? 'Always' : 'Never'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 20 }} />
+
+        {/* Per-event toggles */}
+        <div>
+          <p className="text-sm font-medium text-text-primary mb-3" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Events
+          </p>
+          <div className="space-y-4">
+            <ToggleRow
+              label="Task complete"
+              description="When an agent finishes a task successfully"
+              checked={notifTaskComplete}
+              onChange={(v) => saveNotifEvent('notif_task_complete', v, setNotifTaskComplete)}
+              accent={accentColor}
+              testid="notif-toggle-task-complete"
+            />
+            <ToggleRow
+              label="Task failed"
+              description="When a task encounters an error"
+              checked={notifTaskFailed}
+              onChange={(v) => saveNotifEvent('notif_task_failed', v, setNotifTaskFailed)}
+              accent={accentColor}
+              testid="notif-toggle-task-failed"
+            />
+            <ToggleRow
+              label="Budget alert"
+              description="When spending approaches or exceeds your set limits"
+              checked={notifBudgetAlert}
+              onChange={(v) => saveNotifEvent('notif_budget_alert', v, setNotifBudgetAlert)}
+              accent={accentColor}
+              testid="notif-toggle-budget-alert"
+            />
+          </div>
+        </div>
       </section>
 
       {/* ── About ───────────────────────────────────────── */}

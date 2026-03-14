@@ -1,16 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { getSetting } from '../main/db/settings'
 
 let client: Anthropic | null = null
 
 export function getAnthropicClient(): Anthropic {
   if (!client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY
+    // Prefer environment variable; fall back to key stored via Settings page
+    const apiKey = process.env.ANTHROPIC_API_KEY || getSetting('anthropic_api_key')
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not set. Add it to your .env file.')
+      throw new Error('ANTHROPIC_API_KEY is not set. Add it to your .env file or configure it in Settings.')
     }
     client = new Anthropic({ apiKey })
   }
   return client
+}
+
+/** Call after saving a new API key via settings so the next request picks it up */
+export function resetAnthropicClient(): void {
+  client = null
 }
 
 export interface RunClaudeOptions {

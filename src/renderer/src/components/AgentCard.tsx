@@ -1,5 +1,5 @@
 import type { Agent } from '../env.d'
-import { AGENT_AVATARS } from '../assets/agents'
+import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
 
 interface AgentCardProps {
   agent: Agent
@@ -14,19 +14,30 @@ export default function AgentCard({
   onClick,
   selected
 }: AgentCardProps): React.JSX.Element {
-  const svgUrl = AGENT_AVATARS[agent.id]
+  const imgUrl = AGENT_AVATARS[agent.id]
+  const color  = getAgentColor(agent.id)
 
   return (
     <div
       className={`card p-4 cursor-pointer transition-all ${selected ? 'border-accent/60' : ''}`}
-      style={selected ? { background: 'rgba(139,124,248,0.12)' } : undefined}
+      style={selected ? { background: `${color}18` } : undefined}
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar — SVG for default agents, emoji fallback for custom */}
-        <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-xl flex-shrink-0 border border-white/[0.06] overflow-hidden">
-          {svgUrl
-            ? <img src={svgUrl} alt={agent.name} className="w-full h-full object-cover" />
+        {/* Avatar — circle with dark grunge border */}
+        <div
+          className="flex-shrink-0 overflow-hidden flex items-center justify-center text-xl"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '2px solid rgba(4, 4, 14, 0.90)',
+            boxShadow: `0 0 0 2px ${color}cc, 0 0 12px ${color}50`,
+            background: 'rgba(0,0,0,0.25)',
+          }}
+        >
+          {imgUrl
+            ? <img src={imgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
             : agent.avatar}
         </div>
 

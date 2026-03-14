@@ -14,7 +14,7 @@ test.describe('Agents', () => {
   test('agent detail shows when selected', async ({ page }) => {
     // Lyra should auto-select as first agent — either section label is present
     await expect(
-      page.getByText('Hidden Directives').or(page.getByText('Operational Role')).first()
+      page.getByText('Mission Directives').or(page.getByText('Operational Bio')).first()
     ).toBeVisible()
   })
 })

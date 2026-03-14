@@ -77,7 +77,7 @@
       as a soft, frosted colour wash. The lower the bg opacity,
       the more gradient you see; the higher the blur, the softer it is.
     */
-    background: rgba(6, 8, 22, 0.42);
+    background: rgba(6, 8, 22, 0.74);
     -webkit-backdrop-filter: blur(48px) saturate(1.1);
     backdrop-filter: blur(48px) saturate(1.1);
     border: 1px solid rgba(255, 255, 255, 0.07);
@@ -91,7 +91,7 @@
   }
 
   .card:hover {
-    background: rgba(6, 8, 22, 0.50);
+    background: rgba(6, 8, 22, 0.80);
     border-color: rgba(255, 255, 255, 0.10);
     border-top-color: rgba(255, 255, 255, 0.16);
     box-shadow:

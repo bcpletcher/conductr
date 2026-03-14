@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Agent, Message } from '../env.d'
-import { AGENT_AVATARS } from '../assets/agents'
+import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 import { toast } from '../store/ui'
 
@@ -18,18 +18,30 @@ interface AvatarProps {
 }
 
 function AgentAvatar({ agent, size = 'md' }: AvatarProps): React.JSX.Element {
-  const dim = { sm: 28, md: 36, lg: 56 }[size]
+  const dim    = { sm: 28, md: 36, lg: 56 }[size]
   const fontSize = { sm: '1rem', md: '1.1rem', lg: '1.75rem' }[size]
-  const radius = { sm: 8, md: 10, lg: 14 }[size]
-  const svgUrl = AGENT_AVATARS[agent.id]
+  const imgUrl = AGENT_AVATARS[agent.id]
+  const color  = getAgentColor(agent.id)
+
+  // Dark-grunge circle border: dark inner ring → coloured outer ring → soft glow
+  const borderPx   = { sm: 2, md: 2, lg: 3 }[size]
+  const ringOffset = { sm: '1.5px', md: '2px', lg: '2.5px' }[size]
 
   return (
     <div
-      className="flex-shrink-0 overflow-hidden bg-white/[0.04] border border-white/[0.06] flex items-center justify-center"
-      style={{ width: dim, height: dim, borderRadius: radius, fontSize }}
+      className="flex-shrink-0 overflow-hidden flex items-center justify-center"
+      style={{
+        width: dim,
+        height: dim,
+        borderRadius: '50%',
+        border: `${borderPx}px solid rgba(4, 4, 14, 0.90)`,
+        boxShadow: `0 0 0 ${ringOffset} ${color}cc, 0 0 12px ${color}50`,
+        fontSize,
+        background: 'rgba(0,0,0,0.25)',
+      }}
     >
-      {svgUrl
-        ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {imgUrl
+        ? <img src={imgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
         : agent.avatar}
     </div>
   )

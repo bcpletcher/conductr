@@ -9,6 +9,8 @@ import { registerChatHandlers } from './ipc/chat'
 import { registerDocumentHandlers } from './ipc/documents'
 import { registerClientHandlers } from './ipc/clients'
 import { registerSettingsHandlers } from './ipc/settings'
+import { registerAgentFileHandlers } from './ipc/agentFiles'
+import { registerSearchHandlers } from './ipc/search'
 import { createTray, destroyTray } from './tray'
 
 const isMac = process.platform === 'darwin'
@@ -156,9 +158,11 @@ app.whenReady().then(() => {
   registerWindowHandlers()
 
   registerAgentHandlers()
+  registerAgentFileHandlers()
   registerMetricsHandlers()
   registerClientHandlers()
   registerSettingsHandlers()
+  registerSearchHandlers()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

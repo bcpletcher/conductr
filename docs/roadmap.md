@@ -1,5 +1,24 @@
 # 🗺️ Conductr — Roadmap
 
+---
+
+## 📌 Pinned Ideas
+> High-priority concepts worth fast-tracking regardless of phase order. These are approved directions, not speculation.
+
+**OpenRouter as the default gateway** *(pinned by user — Phase 15)*
+- Make OpenRouter the recommended first-setup path in onboarding: one key, 100+ models, includes free options, no commitment
+- Default global model: `meta-llama/llama-3.1-8b-instruct:free` via OpenRouter (free, capable, zero cost on day one)
+- Users upgrade to paid models per-agent as needed — reduces barrier to first meaningful use to zero
+- Surface OpenRouter's live model catalog in Settings so users can browse and assign models without leaving the app
+
+**App Self-Evolution / Ideas page** *(pinned by user — Phase 14B)*
+- Conductr should study itself — read its own roadmap, architecture docs, and usage patterns, then propose enhancements
+- Every suggestion surfaced with: benefits, risks, gotchas, effort estimate, and which phase it belongs to
+- User approves → task created in Workshop automatically; user denies → archived with reason; user pins → stays visible
+- Lyra is the primary author of these proposals (as Plan Mode Orchestrator — see Phase 3B)
+
+---
+
 ## Phase 0 — Project Setup ✅
 > Get the skeleton running locally as a Mac app
 
@@ -67,6 +86,94 @@
 
 ---
 
+## Phase 3B — SWARM OS: Agents Page Redesign
+> Transform the Agents page into a full "SWARM OS" control center matching the reference video. Three-tab layout replacing the current flat list.
+
+**Lyra — Plan Mode Orchestrator (formalized here):**
+Lyra is not just a chat agent — she is the strategic brain of Conductr. She operates in two explicit modes:
+- **Execution Mode** (default): Runs tasks, orchestrates specialist agents, streams output to Workshop
+- **Strategy / Plan Mode**: Proposes plans, feature ideas, and task decompositions WITHOUT executing. Presents structured proposals awaiting your approval. This is analogous to Claude Code's plan mode — Lyra thinks first, acts only with a green light.
+
+When Lyra operates in Strategy Mode she always outputs:
+1. **What** she proposes to do
+2. **Why** — the benefit/goal
+3. **Risks or gotchas** — what could go wrong or what to watch out for
+4. **Effort estimate** — rough token/time cost
+5. **Approval gate** — task is not created until explicitly confirmed
+
+Lyra also generates the self-evolution proposals on the Ideas page (Phase 14B) — she reads the roadmap, architecture docs, and usage patterns and drafts enhancement proposals in exactly this structured format.
+
+**SWARM OS header + tab structure:**
+- [ ] "SWARM OS" branding pill at top of Agents page with 3 tabs: **Personnel** | **Protocol** | **Comms**
+
+**Full agent roster — all 11 seeded in DB (7 active now, 4 activate with their phase):**
+
+| Agent | Role | Color | Avatar | Phase |
+|---|---|---|---|---|
+| **Lyra** | Lead Intelligence Orchestrator | `#818cf8` indigo | ✦ | Active |
+| **Nova** | General-Purpose Intelligence | `#a78bfa` violet | ⚡ | Active |
+| **Scout** | Repository & Codebase Analyst | `#22d3ee` cyan | 🔍 | Active |
+| **Forge** | Senior Backend Engineer | `#f97316` orange | ⚙️ | Active |
+| **Pixel** | Senior Frontend Engineer | `#ec4899` pink | 🎨 | Active |
+| **Sentinel** | QA & Security Engineer | `#34d399` green | 🛡️ | Active |
+| **Courier** | Delivery & Release Engineer | `#fbbf24` amber | 📦 | Active |
+| **Nexus** | Integration & Data Intelligence | `#0ea5e9` sky | 🌐 | Phase 11 |
+| **Helm** | DevOps & Infrastructure | `#f43f5e` rose | 🧭 | Phase 10/11 |
+| **Atlas** | Project Manager & Ops Coordinator | `#9333ea` purple | 📋 | Phase 12 |
+| **Ledger** | Financial Intelligence & Cost Optimization | `#eab308` gold | ⚖️ | Phase 4 ext. |
+
+**Personnel tab:**
+- [ ] Left panel: "Intelligence Roster" — scrollable agent list with app-style icon, name, role label, online/idle/offline status dot
+- [ ] Right panel: full agent profile card when agent selected:
+  - Large dark app-style icon (80px, rounded-2xl, dark bg) using each agent's avatar symbol
+  - Big agent name (40px+, bold)
+  - Role badge pill (e.g. "Lead Intelligence Orchestrator" in accent color)
+  - Online/Offline status badge (green/amber pill, top right)
+  - Tagline pulled from `operational_role` field
+  - **Mission Directives** section — agent's `system_directive` (first paragraph)
+  - **Operational Bio** section — full `operational_role` description + responsibilities
+  - **Active Task** side panel — current task name, progress %, subtask checklist
+
+**Protocol tab:**
+- [ ] **Organizational Chart** — visual hierarchy tree:
+  - CEO/Leader card at top (amber/orange, user's name + company — pulled from Settings)
+  - Lead Intelligence Orchestrator below (indigo card, **Lyra**)
+  - Specialist grid below Lyra (show active agents in full color, phase-locked agents dimmed/badge):
+    - Row 1 (Core): Nova (violet) · Scout (cyan) · Forge (orange) · Pixel (pink) · Sentinel (green) · Courier (amber)
+    - Row 2 (Expansion): Nexus (sky, Phase 11 badge) · Helm (rose, Phase 11 badge) · Atlas (purple, Phase 12 badge) · Ledger (gold, Phase 4 ext. badge)
+  - Each card: role label (small caps), agent name, short tagline, status dot
+- [ ] **Budget Framework** section below org chart:
+  - Daily Budget display (shared pool amount — pulled from settings `budget_daily`)
+  - Lyra auto-approves tasks under threshold · User approves above threshold
+  - Overrun Threshold → auto-pause & escalate rule
+- [ ] **Agent Routing** section:
+  - Default agent for Chat (configurable, default: Lyra)
+  - Switch command syntax: `/agent <agent-name>` in Chat
+  - Available agents listed with colored names and role labels
+- [ ] **Agent Creation Protocol** document section:
+  - Core Philosophy rules (colored section headers)
+  - Required Agent Components (SOUL.md, TOOLS.md, MEMORY.md, IDENTITY.md, HEARTBEAT.md)
+  - Training Process steps
+  - Anti-Patterns to Avoid
+
+**Comms tab (Intelligence Channels):**
+- [ ] Left panel: "Intelligence Channels" — two sections:
+  - **Group Hubs** — broadcast channels (all agents, or custom subsets)
+  - **Direct** — one-per-agent: Lyra · Nova · Scout · Forge · Pixel · Sentinel · Courier · Nexus · Helm · Atlas · Ledger (each with role subtitle; phase-locked agents shown dimmed)
+- [ ] Right panel: active channel chat area with message input at bottom
+- [ ] Clicking a Direct channel opens that agent's persistent chat thread (reuses Chat page IPC)
+- [ ] "Secured Link" badge on Direct channels
+- [ ] This replaces the current Chat page's flat dropdown — same IPC, new layout
+
+**Agent files system (per-agent):**
+- [ ] Files tab on agent detail: list of agent definition files with size + last-modified
+  - SOUL.md, TOOLS.md, MEMORY.md, IDENTITY.md, HEARTBEAT.md, BOOTSTRAP.md
+- [ ] Click file to view/edit in an inline markdown editor
+- [ ] New agent creation generates file scaffolds from templates
+- [ ] Files stored in SQLite as key-value or as `agent_files` table
+
+---
+
 ## Phase 4 — API Metrics ✅
 > Real-time financial and token intelligence
 
@@ -79,6 +186,7 @@
 - [x] Agent spend breakdown (30-day proportional bars per agent)
 - [x] Glass design system applied to Metrics page
 - [ ] Provider-level cost breakdown (Phase 15 integration — show spend per LLM provider)
+- [ ] **Ledger agent activation** — once Metrics data is rich enough, Ledger's cost optimization reports become genuinely useful; wire `agent-ledger` to read from `api_usage` and `settings` budget keys
 
 ---
 
@@ -114,8 +222,8 @@
 - [x] App icon + branding — conductor-wave logo rendered at 1024×1024 via pure-Node PNG generator; packaged as `.icns` (macOS) + `.ico` (Windows, 16/32/48/256); `npm run generate-icons`
 - [ ] Electron auto-updater
 - [ ] `.dmg` build for distribution
-- [ ] Onboarding wizard — first-run setup (API key entry, guided tour, sample task)
-- [ ] Electron vibrancy — true OS-level blur for sidebar (`vibrancy: 'under-window'`)
+- [x] Onboarding wizard — first-run setup (API key entry, guided tour, agent roster with Lyra-as-commander hierarchy)
+- [x] Electron vibrancy — true OS-level blur for sidebar (`vibrancy: 'under-window'`)
 
 **Command palette (Cmd+K):**
 - [x] Quick task creation ("create task: build auth module")
@@ -125,12 +233,13 @@
 - [x] Quick actions — Open Settings, New Task, View Keyboard Shortcuts (action kind in palette with direct callbacks)
 
 **Global search:**
-- [ ] Unified search across tasks, agents, memories, documents, chat history, activity logs
-- [ ] Fuzzy matching + relevance ranking
-- [ ] Search results grouped by category with inline previews
+- [x] Unified search across tasks, agents, documents, journal entries, chat messages (`search:global` IPC + `SearchModal`)
+- [x] Search results grouped by category with inline previews, keyboard nav (↑↓ Enter Esc)
+- [x] Cmd+Shift+F shortcut + sidebar search button
+- [ ] Fuzzy matching + relevance ranking (currently LIKE-based, upgrade to FTS5 in Phase 9)
 
 **Keyboard shortcuts:**
-- [ ] Full keyboard navigation (Tab through sidebar, Enter to select)
+- [x] Full keyboard navigation (Tab through sidebar, ArrowUp/ArrowDown between nav items)
 - [x] Per-page shortcuts (Workshop: N for new task)
 - [ ] Customizable keybindings (stored in settings)
 - [x] Shortcut cheat sheet overlay (Cmd+/)
@@ -139,8 +248,8 @@
 - [x] In-app toast notifications (bottom-right glass toasts)
 - [x] Notification center panel (bell icon in sidebar footer, slide-out panel)
 - [x] macOS native notifications — OS-level toast on task complete (chime) and task failed (silent) via `Notification.isSupported()` guard in `tasks:start` handler
-- [ ] Configurable per-event: task complete, agent error, budget alert, pipeline done, scheduled task ran
-- [ ] Notification modes: always / only when app is in background / never
+- [x] Configurable per-event: task complete, task failed, budget alert (toggle switches in Settings)
+- [x] Notification modes: always / background only / never (segmented control in Settings; main process checks `notif_mode` + per-event keys before sending OS notification)
 
 **Appearance:**
 - [x] Accent color picker (indigo default, selectable palette)
@@ -225,40 +334,64 @@
 ---
 
 ## Phase 9 — Agent Memory & Learning System
-> Agents that get smarter with every task they complete
+> Agents that get smarter with every task they complete — with isolated skill scopes per client and domain
 
 This is the core intelligence layer. Without persistent memory, agents start from scratch every task. With it, Conductr becomes a genuinely learning system — the longer you use it, the more capable it gets.
 
-**Memory persistence:**
-- [ ] `agent_memories` table — store extracted insights after each task completes
-- [ ] Post-task learning extraction — runner automatically distills key patterns and facts from task activity logs
-- [ ] Agents receive accumulated memories as context when starting new tasks (injected into system prompt)
-- [ ] Memory summarization — rolling window compressor to prevent context bloat (keep memories dense and relevant)
-- [ ] Memory decay/relevance scoring — older or less-used memories rank lower in context injection
+**Memory schema — scoped from the start:**
+- [ ] `agent_memories` table with columns: `id`, `agent_id`, `client_id` (nullable), `domain_tags` (JSON array), `skill_tags` (JSON array), `content`, `relevance_score`, `created_at`, `last_used_at`
+- [ ] Memories are scoped at write time — every extracted insight is tagged with the active `client_id` and domain (e.g. `["vue", "composition-api"]` or `["react", "tailwind"]`)
+- [ ] Skill isolation: Vue.js patterns learned for Client A are never injected into a Client B task — `client_id` filter is applied before relevance scoring
+- [ ] Global memories (no `client_id`) contain agent-wide expertise that applies across all clients (e.g. "always prefer named exports", "never mutate props")
 
-**Cross-agent knowledge:**
-- [ ] `knowledge_base` table — shared cross-agent learnings pool (all agents can read, specialist agents write)
-- [ ] Scout's codebase analysis automatically available to Forge/Pixel without re-analyzing
-- [ ] Sentinel's test failure patterns available to all code-writing agents
+**Adaptive context injection (RAG-based, not flat file dumps):**
+- [ ] On task start: query `agent_memories` filtered by `agent_id` + `client_id` (if set) + ranked by tag overlap with the task's own tags and description
+- [ ] Only inject the top-N highest-scoring memories — configurable memory budget (e.g. 2,000 tokens max for injected context)
+- [ ] Memory score = `relevance_to_task × recency_weight × usage_frequency` — older or less-used skills rank lower
+- [ ] Result: an agent can be a Vue 3 expert for Client A and a React/Tailwind expert for Client B in the same session, with zero bleed between them
+
+**Post-task learning extraction:**
+- [ ] After every task completes, the runner sends the activity log to a lightweight extraction pass
+- [ ] Extractor distills: key patterns discovered, mistakes made, approaches that worked, tool/library specifics
+- [ ] Each extracted memory is saved with the task's `client_id` and auto-tagged by domain (detected from task content)
+- [ ] Agent's `MEMORY.md` file (in Agent Files tab) becomes a **human-readable summary** of the top global memories — the real source of truth is the DB
+
+**Skill hardening — daily review job:**
+- [ ] "Skill Building" scheduled task (runs daily or on demand) — consolidates fragmented memories into hardened skill entries
+- [ ] Example: 10 separate Vue.js observations → synthesized into a single "Vue 3 Composition API expert profile" memory with high relevance score
+- [ ] Skills are promoted from `client_id`-scoped to global when the same pattern appears across ≥3 different clients (universal best practices)
+- [ ] Skill level indicators per domain: Novice → Practitioner → Expert → Master (based on memory count + task success rate)
+- [ ] Agent experience tracking — task count per domain, clients served, active skill areas
+
+**Cross-agent knowledge pool:**
+- [ ] `knowledge_base` table — shared learnings readable by all agents (specialist agents write, all agents read)
+- [ ] Scout's codebase analysis available to Forge/Pixel without re-analyzing — scoped to the repo/client it analyzed
+- [ ] Sentinel's test failure patterns available to code-writing agents for that client's repo
+- [ ] Knowledge entries have `source_agent_id`, `client_id`, and `domain_tags` — same scoping model as memories
 
 **Memory UI:**
-- [ ] Memory viewer in Agent detail page — see exactly what an agent has learned over time
-- [ ] Filter by tag/domain, search memories
-- [ ] Delete individual memories or bulk clear
-- [ ] Memory timeline — visual history of learning events
+- [ ] Memory viewer in Agent detail page — see what an agent has learned, filterable by client and domain
+- [ ] Skill map visualization — bubble chart of agent expertise by domain and depth
+- [ ] Delete individual memories or bulk-clear by client, by domain, or all
+- [ ] Memory timeline — visual history of learning events with task linkback
+- [ ] "Inject preview" — before running a task, show exactly which memories will be injected and why
 
-**Skill building:**
-- [ ] "Skill Building" scheduled mode — daily review job that synthesizes new skills and strategies from accumulated memories
-- [ ] Memory search — query the knowledge base from Chat ("what has Forge learned about our auth system?")
-- [ ] Agent experience tracking — task count, domains worked, skill level indicators
-
-**Prompt intelligence (from video — the app gets smarter about how you talk to it):**
+**Prompt intelligence:**
 - [ ] Post-prompt analysis — after each user prompt, rate quality and identify improvement opportunities
 - [ ] Prompt improvement suggestions — "Your prompt was vague about scope. Next time try: ..."
-- [ ] Prompt templates library — save and reuse effective prompts (per domain/agent)
+- [ ] Prompt templates library — save and reuse effective prompts (per domain/agent/client)
 - [ ] Prompt history with outcome tracking — which prompts led to successful tasks vs failed ones
 - [ ] Auto-rewrite suggestions — before sending, offer a polished version of the user's prompt
 - [ ] Prompt scoring dashboard — track prompt quality improvement over time
+
+**Token efficiency (built into every layer):**
+- [ ] **Anthropic Prompt Caching** — apply `cache_control: ephemeral` to static system context (SOUL.md, IDENTITY.md, TOOLS.md, global memories) — these rarely change and cost ~90% less to re-read on cached hits
+- [ ] **Adaptive context budget** — configurable max tokens for injected memories per task (default 2,000); prevent runaway context bloat
+- [ ] **Relevance-filtered injection** — never dump all memories; score and rank, inject only what's relevant to the current task
+- [ ] **Cross-agent result caching** — if Scout already analyzed this repo this session, Forge reads the cached result instead of re-running
+- [ ] **Per-agent model routing** (Phase 15 prerequisite) — use Haiku for memory extraction passes (cheap, fast), Sonnet/Opus for actual task execution
+- [ ] **Skill consolidation reduces future cost** — the daily Skill Building job merges 10 memory entries into 1 dense entry → less context used per task over time
+- [ ] **Pre-task token estimation** — before queuing, estimate memory + system + task tokens so user can approve before spending
 
 ---
 
@@ -328,6 +461,8 @@ MCP (Model Context Protocol) lets agents call external tools — browser control
 - [ ] Custom MCP server scaffolding — in-app guide for wrapping internal APIs as MCP servers
 - [ ] Community MCP server registry — browse and install third-party servers (Slack, Notion, Linear, Figma, etc.)
 - [ ] MCP Apps — render interactive tool results inline in Chat (like Cursor's MCP Apps)
+- [ ] **Nexus agent activation** — connect Nexus to the MCP filesystem + fetch servers; give Nexus access to external service MCP servers (Slack, Gmail, Calendar, Jira) as they're configured
+- [ ] **Helm agent activation** — give Helm terminal access (Phase 10 infrastructure) and repo write-back; Helm should be able to write CI/CD configs and Dockerfiles directly to disk
 
 ---
 
@@ -364,10 +499,14 @@ MCP (Model Context Protocol) lets agents call external tools — browser control
 - [ ] Chained: pipeline completion triggers another pipeline
 
 **Built-in pipeline templates:**
-- [ ] **Jira → PR**: Scout analyze → Lyra plan → Forge/Pixel implement → Sentinel test → Courier PR
-- [ ] **Daily Briefing**: Nova summarize + Scout check repos → Lyra synthesize briefing
-- [ ] **Code Review**: Scout analyze diff → Sentinel security scan → Nova write review summary
+- [ ] **Jira → PR**: Nexus ingest → Scout analyze → Lyra plan → Forge/Pixel implement → Sentinel test → Courier PR
+- [ ] **Daily Briefing**: Nexus pull external data → Nova summarize → Scout check repos → Lyra synthesize briefing
+- [ ] **Code Review**: Scout analyze diff → Sentinel security scan → Nova write review summary → Courier structure PR
 - [ ] **Bug Fix**: Scout locate bug → Forge fix → Sentinel test → Courier PR
+- [ ] **Deployment**: Forge builds → Sentinel validates → Helm deploys → Courier writes release notes
+- [ ] **Sprint Planning**: Atlas decomposes objective → Lyra approves plan → Atlas assigns agents → Ledger estimates cost
+
+- [ ] **Atlas agent activation** — wire Atlas to read task/subtask state from `tasks` table; Atlas can write new tasks and update existing ones via IPC; useful as PM voice in multi-agent pipelines
 
 ---
 
@@ -446,41 +585,136 @@ MCP (Model Context Protocol) lets agents call external tools — browser control
 
 ---
 
+## Phase 14B — App Self-Evolution & Ideas Page
+> Conductr as a living document of itself — the app studies its own codebase, roadmap, and usage patterns, then proposes its own improvements.
+
+This is what separates Conductr from every other AI tool: it doesn't just help you build things — it helps build *itself*. Lyra (as Plan Mode Orchestrator) reads the app's own context and drafts structured enhancement proposals. You approve or deny. Approved ideas become Workshop tasks automatically.
+
+**App self-knowledge (what agents can read about themselves):**
+- [ ] Feed Lyra the app's `docs/roadmap.md`, `ARCHITECTURE.md`, and `MEMORY.md` as indexed context (stored in `knowledge_base` with `source: 'app-self'` tag)
+- [ ] Scout indexes the Conductr codebase itself (once Phase 10 is live) — Lyra can see actual implementation gaps, not just roadmap gaps
+- [ ] Usage telemetry context: most-visited pages, most-used agents, task completion rate, common failure points — all summarized and fed to Lyra as "usage intelligence"
+- [ ] Cost pattern context: which agents/task types are expensive — informs suggestions like "Scout should cache this analysis"
+- [ ] Re-index triggered on: roadmap change, code change (Phase 10 file watcher), or manual "re-scan" button
+
+**Ideas page — `src/renderer/src/pages/Ideas.tsx` (new nav item):**
+- [ ] New sidebar nav item: **Ideas** (lightbulb icon) — where all AI-generated proposals live
+- [ ] Each idea card displays:
+  - **Title** — short, actionable proposal name
+  - **What** — what the change or feature does
+  - **Why** — the benefit or problem it solves
+  - **Risks / Gotchas** — what to watch out for, known tradeoffs, implementation complexity
+  - **Effort estimate** — S / M / L / XL, estimated token cost if relevant
+  - **Phase** — which roadmap phase it belongs to (or "New Phase" if net-new)
+  - **Source** — which agent proposed it, timestamp
+  - **Status** — Pending / Approved / Denied / Pinned
+- [ ] **Approve** → auto-creates a Workshop task with the idea's title + description pre-filled, links back to the idea
+- [ ] **Deny** → archives with optional reason (dropdown: "Not now", "Not aligned", "Already planned", "Too risky"); remains searchable
+- [ ] **Pin** → idea stays at top of the list regardless of age; pinned ideas appear in Lyra's context when generating new proposals (so she doesn't re-propose what you've already pinned)
+- [ ] **Refine** → open a Chat thread with Lyra to drill into the idea before approving; conversation linked to the idea card
+- [ ] Filter/sort: by status, by phase, by effort, by agent source, by date
+
+**Proposal generation — how Lyra decides what to propose:**
+- [ ] Manual trigger: "Analyze Conductr and suggest improvements" chat command to Lyra → runs analysis → batch of proposals deposited to Ideas page
+- [ ] Automated: after every 10 completed tasks, Lyra runs a lightweight background analysis using usage patterns + roadmap gaps → surfaces top 3 suggestions
+- [ ] Lyra cross-references pending Ideas before proposing — avoids duplicate suggestions
+- [ ] Proposal quality improves over time as Lyra learns which types of ideas get approved vs denied (stored in her `agent_memories` with `domain: 'self-evolution'`)
+- [ ] Scout contributes code-level suggestions (e.g. "This IPC handler is called 40× per session; it should be cached") — different lens than Lyra's strategic proposals
+
+**Roadmap sync:**
+- [ ] Approved + completed ideas can be written back to `roadmap.md` as checked items — Conductr literally documents its own evolution
+- [ ] Denied ideas are never re-proposed unless the user manually un-archives them
+- [ ] Pinned ideas are reflected in the Pinned Ideas section at the top of `roadmap.md` automatically
+
+**`ideas` DB table:**
+```sql
+CREATE TABLE ideas (
+  id          TEXT PRIMARY KEY,
+  title       TEXT NOT NULL,
+  what        TEXT,
+  why         TEXT,
+  risks       TEXT,
+  effort      TEXT,  -- 'S' | 'M' | 'L' | 'XL'
+  phase       TEXT,
+  source_agent TEXT,
+  status      TEXT DEFAULT 'pending',  -- pending | approved | denied | pinned
+  deny_reason TEXT,
+  task_id     TEXT,  -- linked Workshop task if approved
+  created_at  TEXT DEFAULT (datetime('now')),
+  updated_at  TEXT DEFAULT (datetime('now'))
+)
+```
+
+---
+
 ## Phase 15 — Multi-Provider LLM Engine
-> Use the best model for every task — Claude, GPT, Gemini, local models. No reason to ever leave Conductr.
+> Use the best model for every task — Claude, GPT, Gemini, local/free models. No reason to ever leave Conductr.
 
-This is the key unlock for never switching to another AI app. Different models excel at different things. Conductr should let you use any model through any agent.
+This is the key unlock for never switching to another AI app. Different models excel at different things and have different cost profiles. Conductr should let you route any agent to any model — paid, free, or local — and switch without rewriting anything.
 
-**Provider support:**
-- [ ] Anthropic API — Claude Opus, Sonnet, Haiku (current, expand to model selector)
-- [ ] OpenAI API — GPT-4o, o3, o4-mini (via `openai` SDK)
-- [ ] Google Gemini API — Gemini 2.0 Pro/Flash (via `@google/genai` SDK)
-- [ ] Local models — Ollama, LM Studio (local HTTP endpoint, user-configured)
-- [ ] OpenRouter — access 100+ models through single API (optional)
+**Important: API access ≠ subscription.** ChatGPT Plus and Claude Pro are web-app subscriptions and do NOT grant API access. API access is billed separately per token. However, several providers have genuine free tiers (Gemini Flash, Groq, OpenRouter free models, Ollama local) that cost nothing at all. Conductr will clearly distinguish free-tier vs paid providers in Settings.
+
+**Provider abstraction layer — `src/api/providers/`:**
+- [ ] `LLMProvider` interface — all providers implement `stream(messages, options): AsyncGenerator<chunk>` and `listModels(): Model[]`
+- [ ] `src/api/providers/anthropic.ts` — current implementation, refactored to interface
+- [ ] `src/api/providers/openai.ts` — OpenAI + any OpenAI-compatible endpoint (GPT-4o, o3, o4-mini, etc.)
+- [ ] `src/api/providers/gemini.ts` — Google Gemini via `@google/genai` SDK
+- [ ] `src/api/providers/groq.ts` — Groq Cloud (OpenAI-compatible, uses `openai` SDK pointed at `api.groq.com`)
+- [ ] `src/api/providers/mistral.ts` — Mistral AI API (European, GDPR-friendly, OpenAI-compatible)
+- [ ] `src/api/providers/xai.ts` — xAI Grok (OpenAI-compatible endpoint)
+- [ ] `src/api/providers/ollama.ts` — local Ollama / LM Studio / Jan (any OpenAI-compatible local server)
+- [ ] `src/api/providers/openrouter.ts` — OpenRouter gateway (100+ models, single API key, unified billing)
+- [ ] `src/api/router.ts` — selects provider + model based on agent config, falls back to global default
+
+**Paid providers:**
+- [ ] **Anthropic** — Claude Opus 4, Sonnet 4, Haiku 3.5 · Best for: reasoning, code, long context · Requires: `ANTHROPIC_API_KEY`
+- [ ] **OpenAI** — GPT-4o, o3, o4-mini, GPT-4.1 · Best for: tool use, broad capability, vision · Requires: `OPENAI_API_KEY`
+- [ ] **Google Gemini** — Gemini 2.5 Pro, 2.0 Flash · Best for: long context (1M tokens), multimodal · Requires: `GOOGLE_API_KEY`
+- [ ] **Mistral AI** — Mistral Large, Codestral, Mixtral · Best for: European data residency, coding · Requires: `MISTRAL_API_KEY`
+- [ ] **xAI Grok** — Grok-2, Grok-2-mini · Best for: real-time web knowledge, competitor to GPT-4o · Requires: `XAI_API_KEY`
+
+**Free / free-tier providers:**
+- [ ] **Google Gemini Flash** — free tier via API (rate-limited: 15 RPM / 1M tokens/day) · Genuinely free, no credit card · Great for: memory extraction passes, summarization, draft generation
+- [ ] **Groq Cloud** — free tier (rate-limited: 14,400 req/day) · Runs Llama 3.3 70B, Gemma 2 9B, Mistral 8×7B at 500+ tokens/sec · Fastest inference available, free · Great for: time-sensitive tasks, streaming chat
+- [ ] **OpenRouter free models** — subset of OpenRouter's catalog offered at $0/token (Meta Llama 3.1 8B, Gemma 2 9B, Mistral 7B, etc.) · Requires free OpenRouter account · Model list fetched live from API
+- [ ] **Ollama (local)** — fully free, runs on your machine · Llama 3.3, DeepSeek-R1, Mistral, Gemma, Phi-4, Qwen, etc. · No data leaves your machine · Settings: `ollama_endpoint` (default `http://localhost:11434`) · Compatible apps: LM Studio, Jan, Msty — any OpenAI-compatible local server
+  - **Tailscale users**: set `ollama_endpoint` to Tailscale IP of remote GPU machine — zero additional code, Tailscale handles routing at OS level
+
+**OpenRouter — the universal gateway:**
+- [ ] Single `OPENROUTER_API_KEY` unlocks 100+ models from 20+ providers through one interface
+- [ ] Model discovery: live catalog fetch on settings open, cached for 24h — always shows current available models
+- [ ] Includes free models (labeled `$0.00/M tokens`), budget models, and flagship models — all through one key
+- [ ] Unified billing: one invoice covers all providers accessed via OpenRouter
+- [ ] Useful for: experimenting with new models without getting 10 API keys, fallback routing, cost arbitrage
 
 **Per-agent model selection:**
-- [ ] Each agent can be configured with a specific provider + model
-- [ ] Default: global model. Override: per-agent in Agent detail page
-- [ ] Example: Lyra uses claude-opus (best reasoning), Scout uses gpt-4o (fast + cheap), Forge uses claude-sonnet
+- [ ] Each agent has: default provider (global), override provider + model (per-agent), and a fallback chain
+- [ ] Example routing strategy: Lyra → Claude Opus 4 (orchestration) · Scout → Gemini Flash free (codebase analysis, cheap) · Forge → Claude Sonnet 4 (code writing) · memory extraction → Groq Llama 3 (fast + free)
+- [ ] Model picker in Agent detail page — dropdown grouped by provider, shows pricing and context window
+- [ ] Per-task override — force a specific model for a single run without changing agent defaults
 
 **Unified cost tracking:**
-- [ ] Different pricing per provider/model — all normalized to USD in api_usage table
-- [ ] Metrics page shows cost breakdown by provider, by model, by agent
-- [ ] Budget controls work across all providers
+- [ ] All providers normalized to USD/token in `api_usage` table — free-tier usage logged at $0
+- [ ] Metrics page: cost breakdown by provider, model, agent, client
+- [ ] Budget controls apply across all providers — free tier usage still counts toward rate-limit tracking
+- [ ] Free tier usage monitoring — alert when approaching daily rate limits on free providers so tasks don't silently fail
 
-**Provider health:**
-- [ ] Health monitoring — latency, error rate, uptime per provider
-- [ ] Automatic failover — if Anthropic is down, route to OpenAI backup (configurable)
-- [ ] Provider status indicator in sidebar (green/yellow/red dot)
+**Provider health & failover:**
+- [ ] Health check on startup — ping each configured provider, cache latency + status
+- [ ] Provider status indicator in sidebar popover (green/yellow/red per provider)
+- [ ] Automatic failover chain — if Anthropic returns 529/overloaded, route to configured backup (e.g. OpenAI)
+- [ ] Rate limit detection — on 429, rotate to next key or next provider in chain; exponential backoff
 
 **Model comparison:**
-- [ ] Compare mode — send same prompt to 2-3 models, see responses side by side
-- [ ] Useful for evaluating which model is best for a given task type
-- [ ] Results saved to documents for reference
+- [ ] Compare mode — send same prompt to 2-3 models simultaneously (reuses Broadcast architecture from Chat)
+- [ ] Results shown side-by-side with latency, token count, and cost annotated
+- [ ] Save comparison as Document — track which model won for given task type over time
+- [ ] Useful for: evaluating if Groq free can replace Sonnet for a given agent's work
 
 **Multimodal:**
-- [ ] Vision support: Claude, GPT-4o, Gemini all support image input — route to capable model
-- [ ] Audio input support (future: Gemini, GPT-4o voice modes)
+- [ ] Vision routing — automatically route vision tasks to capable models (Claude, GPT-4o, Gemini)
+- [ ] Image paste in Chat → detect vision-capable agent → route to vision model if current agent's model lacks it
+- [ ] Audio: Gemini and GPT-4o voice modes (future)
 
 ---
 

@@ -45,6 +45,11 @@ interface UIStore {
   openSheet: () => void
   closeSheet: () => void
 
+  // Global search
+  isSearchOpen: boolean
+  openSearch: () => void
+  closeSearch: () => void
+
   // Wallpaper
   wallpaperBrightness: number
   setWallpaperBrightness: (v: number) => void
@@ -123,6 +128,10 @@ export const useUIStore = create<UIStore>((set) => ({
   isSheetOpen: false,
   openSheet: () => set({ isSheetOpen: true }),
   closeSheet: () => set({ isSheetOpen: false }),
+
+  isSearchOpen: false,
+  openSearch: () => set({ isSearchOpen: true }),
+  closeSearch: () => set({ isSearchOpen: false }),
 
   wallpaperBrightness: 0.75,
   setWallpaperBrightness: (v) => set({ wallpaperBrightness: v }),

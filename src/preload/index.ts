@@ -118,17 +118,38 @@ const api = {
       ipcRenderer.invoke('clients:getActivityLog', clientId, limit),
   },
 
+  // Agent Files
+  agentFiles: {
+    getAll: (agentId: string) =>
+      ipcRenderer.invoke('agentFiles:getAll', agentId),
+    get: (agentId: string, filename: string) =>
+      ipcRenderer.invoke('agentFiles:get', agentId, filename),
+    save: (agentId: string, filename: string, content: string) =>
+      ipcRenderer.invoke('agentFiles:save', agentId, filename, content),
+    delete: (agentId: string, filename: string) =>
+      ipcRenderer.invoke('agentFiles:delete', agentId, filename),
+  },
+
   // Settings
   settings: {
     get: (key: string) => ipcRenderer.invoke('settings:get', key),
     set: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value),
     pickWallpaper: () => ipcRenderer.invoke('settings:pick-wallpaper'),
+    checkApiKey: () => ipcRenderer.invoke('settings:check-api-key'),
+    setApiKey: (key: string) => ipcRenderer.invoke('settings:set-api-key', key),
+  },
+
+  // Global search
+  search: {
+    global: (query: string) => ipcRenderer.invoke('search:global', query),
   },
 
   // App-level push events from main process
   app: {
     /** Current OS platform — used by renderer to show/hide Windows title bar controls */
     platform: process.platform,
+    /** True when running under Playwright (NODE_ENV=test) — skips first-run onboarding */
+    isTest: process.env.NODE_ENV === 'test',
     onOpenShortcutSheet: (cb: () => void) =>
       ipcRenderer.on('open-shortcut-sheet', () => cb()),
     removeShortcutSheetListener: () =>

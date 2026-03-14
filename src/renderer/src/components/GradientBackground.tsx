@@ -83,7 +83,7 @@ export default function GradientBackground(): React.JSX.Element {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(8, 12, 32, 0.30)',
+          background: 'rgba(8, 12, 32, 0.55)',
         }}
       />
     </div>

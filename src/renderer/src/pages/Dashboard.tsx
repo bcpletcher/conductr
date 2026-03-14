@@ -9,14 +9,15 @@ const api = window.electronAPI
 const SESSION_START = Date.now()
 
 // ── Agent helpers ────────────────────────────────────────────────
+// Colours match each agent's webp icon primary hue (public/agent-*.webp)
 const AGENT_COLORS: Record<string, string> = {
-  'agent-lyra':     '#818cf8',
-  'agent-nova':     '#34d399',
-  'agent-scout':    '#60a5fa',
-  'agent-forge':    '#fb923c',
-  'agent-pixel':    '#a78bfa',
-  'agent-sentinel': '#f87171',
-  'agent-courier':  '#fbbf24',
+  'agent-lyra':     '#a855f7',  // purple
+  'agent-nova':     '#3b82f6',  // blue
+  'agent-scout':    '#06b6d4',  // cyan
+  'agent-forge':    '#f97316',  // orange
+  'agent-pixel':    '#ec4899',  // pink
+  'agent-sentinel': '#ef4444',  // red
+  'agent-courier':  '#22c55e',  // green
 }
 
 function agentDisplayName(agentId: string | null): string {

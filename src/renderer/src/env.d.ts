@@ -101,6 +101,28 @@ export interface IntelligenceInsight {
   generated_at: string
 }
 
+export interface AgentFile {
+  id: string
+  agent_id: string
+  filename: string
+  content: string
+  created_at: string
+  updated_at: string | null
+}
+
+export interface SearchResult {
+  type: 'task' | 'agent' | 'document' | 'journal' | 'message'
+  id: string
+  title: string
+  subtitle: string
+  snippet: string
+}
+
+export interface ApiKeyStatus {
+  configured: boolean
+  source: 'env' | 'settings' | null
+}
+
 export interface Client {
   id: string
   name: string
@@ -150,6 +172,12 @@ declare global {
         update: (id: string, input: Partial<Agent>) => Promise<Agent>
         delete: (id: string) => Promise<void>
         getActivityLog: (agentId: string, limit?: number) => Promise<ActivityLogEntry[]>
+      }
+      agentFiles: {
+        getAll: (agentId: string) => Promise<AgentFile[]>
+        get: (agentId: string, filename: string) => Promise<AgentFile | null>
+        save: (agentId: string, filename: string, content: string) => Promise<AgentFile>
+        delete: (agentId: string, filename: string) => Promise<void>
       }
       metrics: {
         getTodaySpend: () => Promise<number>
@@ -223,10 +251,17 @@ declare global {
         get: (key: string) => Promise<string | null>
         set: (key: string, value: string) => Promise<boolean>
         pickWallpaper: () => Promise<string | null>
+        checkApiKey: () => Promise<ApiKeyStatus>
+        setApiKey: (key: string) => Promise<boolean>
+      }
+      search: {
+        global: (query: string) => Promise<SearchResult[]>
       }
       app: {
         /** Current OS platform string, e.g. 'darwin' | 'win32' | 'linux' */
         platform: string
+        /** True when running under Playwright (NODE_ENV=test) — skips onboarding */
+        isTest: boolean
         onOpenShortcutSheet: (cb: () => void) => void
         removeShortcutSheetListener: () => void
         /** Fired when the user picks a page from the system tray / menu-bar menu */

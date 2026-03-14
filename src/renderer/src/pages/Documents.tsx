@@ -123,8 +123,16 @@ export default function Documents(): React.JSX.Element {
         {/* List */}
         <div
           data-testid="document-list"
-          className="flex flex-col gap-2 overflow-y-auto flex-shrink-0"
-          style={{ width: 320 }}
+          className="flex flex-col gap-2 overflow-y-auto flex-shrink-0 rounded-2xl p-2"
+          style={{
+            width: 320,
+            background: 'rgba(6, 8, 22, 0.74)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderTopColor: 'rgba(255,255,255,0.11)',
+            backdropFilter: 'blur(48px) saturate(1.1)',
+            WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.60)',
+          }}
         >
           {documents.length === 0 ? (
             <div className="card flex flex-col items-center justify-center py-16 text-center gap-3">

@@ -15,9 +15,10 @@ const GROUPS: ShortcutGroup[] = [
   {
     title: 'Global',
     rows: [
-      { keys: ['⌘', 'K'],   description: 'Open command palette' },
-      { keys: ['⌘', '/'],   description: 'Open this shortcut sheet' },
-      { keys: ['Esc'],       description: 'Close modal / palette' },
+      { keys: ['⌘', 'K'],          description: 'Open command palette' },
+      { keys: ['⌘', '⇧', 'F'],    description: 'Search all data' },
+      { keys: ['⌘', '/'],          description: 'Open this shortcut sheet' },
+      { keys: ['Esc'],             description: 'Close modal / palette' },
     ],
   },
   {

@@ -11,7 +11,29 @@ import {
 } from '../db/tasks'
 import { getActivityLog, addActivityLog, createDocument } from '../db/documents'
 import { createJournalEntry } from '../db/journal'
+import { getSetting } from '../db/settings'
 import { runTask } from '../../agents/runner'
+
+/**
+ * Check whether a native OS notification should be sent for the given event key.
+ * Respects the user's notification mode (always / background / never) and the
+ * per-event enabled toggle stored in the settings table.
+ *
+ * @param win       The main BrowserWindow (used to detect focus state)
+ * @param eventKey  Settings key for the per-event toggle (e.g. 'notif_task_complete')
+ */
+function shouldNotify(win: BrowserWindow, eventKey: string): boolean {
+  // Per-event flag — default enabled (treat missing key as '1')
+  const eventEnabled = getSetting(eventKey) ?? '1'
+  if (eventEnabled !== '1') return false
+
+  // Global mode
+  const mode = getSetting('notif_mode') ?? 'always'
+  if (mode === 'never') return false
+  if (mode === 'background' && win.isFocused()) return false
+
+  return true
+}
 
 export function registerTaskHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('tasks:getAll', () => getAllTasks())
@@ -53,7 +75,7 @@ export function registerTaskHandlers(mainWindow: BrowserWindow): void {
 
       // Native OS notification for task completion
       const completedTask = getTaskById(taskId)
-      if (Notification.isSupported()) {
+      if (Notification.isSupported() && shouldNotify(mainWindow, 'notif_task_complete')) {
         new Notification({
           title: 'Task Complete',
           body: completedTask?.title ?? 'A task has finished successfully',
@@ -92,7 +114,7 @@ export function registerTaskHandlers(mainWindow: BrowserWindow): void {
 
       // Native OS notification for task failure
       const failedTask = getTaskById(taskId)
-      if (Notification.isSupported()) {
+      if (Notification.isSupported() && shouldNotify(mainWindow, 'notif_task_failed')) {
         new Notification({
           title: 'Task Failed',
           body: failedTask?.title ?? 'A task encountered an error',

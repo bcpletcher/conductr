@@ -6,6 +6,8 @@ import ToastContainer from './components/Toast'
 import ShortcutSheet from './components/ShortcutSheet'
 import NotificationPanel from './components/NotificationPanel'
 import WindowControls from './components/WindowControls'
+import Onboarding from './components/Onboarding'
+import SearchModal from './components/SearchModal'
 import { useUIStore } from './store/ui'
 import Dashboard from './pages/Dashboard'
 import Workshop from './pages/Workshop'
@@ -44,15 +46,26 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
 }
 
 export default function App(): React.JSX.Element {
-  const [currentPage, setCurrentPage] = useState<NavPage>('dashboard')
+  const [currentPage,    setCurrentPage]    = useState<NavPage>('dashboard')
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const PageComponent = PAGE_MAP[currentPage]
   const openPalette            = useUIStore((s) => s.openPalette)
   const openSheet              = useUIStore((s) => s.openSheet)
+  const openSearch             = useUIStore((s) => s.openSearch)
   const setWallpaperBrightness = useUIStore((s) => s.setWallpaperBrightness)
   const setAccentColor         = useUIStore((s) => s.setAccentColor)
   const setDensity             = useUIStore((s) => s.setDensity)
   const setWallpaperStyle      = useUIStore((s) => s.setWallpaperStyle)
   const setCustomWallpaperPath = useUIStore((s) => s.setCustomWallpaperPath)
+
+  // Show onboarding on first launch (if not completed; skip in test mode or when env var is set)
+  useEffect(() => {
+    if (window.electronAPI.app.isTest) return
+    if (import.meta.env.VITE_SKIP_ONBOARDING === 'true') return
+    window.electronAPI.settings.get('onboarding_complete').then((val) => {
+      if (!val) setShowOnboarding(true)
+    }).catch(() => {})
+  }, [])
 
   // Load persisted settings on first mount
   useEffect(() => {
@@ -84,10 +97,15 @@ export default function App(): React.JSX.Element {
         e.preventDefault()
         openSheet()
       }
+      // Cmd+Shift+F / Ctrl+Shift+F — global search
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault()
+        openSearch()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openPalette, openSheet])
+  }, [openPalette, openSheet, openSearch])
 
   // Listen for shortcut sheet trigger from macOS menu bar
   useEffect(() => {
@@ -129,8 +147,11 @@ export default function App(): React.JSX.Element {
       <ToastContainer />
       <ShortcutSheet />
       <NotificationPanel />
+      <SearchModal onNavigate={setCurrentPage} />
       {/* Custom title-bar close/min/max — only rendered on Windows */}
       <WindowControls />
+      {/* First-run onboarding — shown once, dismissed by completing wizard */}
+      {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
     </div>
   )
 }

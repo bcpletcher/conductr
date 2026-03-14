@@ -55,13 +55,6 @@ export function registerDocumentHandlers(win: BrowserWindow): void {
   ipcMain.handle('intelligence:markAllRead', () => markAllInsightsRead())
   ipcMain.handle('intelligence:delete', (_e, id: string) => deleteInsight(id))
 
-  // ── Global search ────────────────────────────────────────────────────
-  ipcMain.handle('search:global', (_e, query: string) => {
-    const docs = searchDocuments(query, 20)
-    const journal = searchJournalEntries(query, 20)
-    return { documents: docs, journal }
-  })
-
   // ── Intelligence — generate (streaming) ──────────────────────────────
   ipcMain.on('intelligence:generate', async (
     _e,

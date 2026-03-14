@@ -403,24 +403,37 @@ export default function Clients(): React.JSX.Element {
 
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Client list */}
-        <div className="w-64 flex-shrink-0 space-y-2 overflow-y-auto" data-testid="client-list">
-          <div className="section-label px-1 mb-3">Portfolio</div>
-          {clients.map((client) => (
-            <ClientCard
-              key={client.id}
-              client={client}
-              taskCount={counts[client.id]?.tasks ?? 0}
-              docCount={counts[client.id]?.docs ?? 0}
-              selected={selectedClient?.id === client.id}
-              onClick={() => setSelectedClient(client)}
-            />
-          ))}
-          {clients.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'rgba(255,255,255,0.28)' }}>
-              <i className="fa-solid fa-users text-xl" style={{ color: 'rgba(255,255,255,0.10)' }} />
-              <span className="text-sm">No clients yet</span>
-            </div>
-          )}
+        <div
+          className="w-64 flex-shrink-0 flex flex-col overflow-hidden rounded-2xl"
+          style={{
+            background: 'rgba(6, 8, 22, 0.74)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderTopColor: 'rgba(255,255,255,0.11)',
+            backdropFilter: 'blur(48px) saturate(1.1)',
+            WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.60)',
+          }}
+          data-testid="client-list"
+        >
+          <div className="section-label px-4 pt-4 pb-2 flex-shrink-0">Portfolio</div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+            {clients.map((client) => (
+              <ClientCard
+                key={client.id}
+                client={client}
+                taskCount={counts[client.id]?.tasks ?? 0}
+                docCount={counts[client.id]?.docs ?? 0}
+                selected={selectedClient?.id === client.id}
+                onClick={() => setSelectedClient(client)}
+              />
+            ))}
+            {clients.length === 0 && (
+              <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                <i className="fa-solid fa-users text-xl" style={{ color: 'rgba(255,255,255,0.10)' }} />
+                <span className="text-sm">No clients yet</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Client detail */}
