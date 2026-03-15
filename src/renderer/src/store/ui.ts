@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { NavPage } from '../App'
+import type { ConductorMode } from '../env.d'
 import { v4 as uuid } from 'uuid'
 
 export interface Toast {
@@ -72,10 +73,16 @@ interface UIStore {
   setCardGlassIntensity: (v: number) => void
   cardPanelDarkness: number        // 0–1: controls background opacity
   setCardPanelDarkness: (v: number) => void
+  cardPanelBrightness: number      // 0–1: controls backdrop brightness (maps to 0.5–1.5x)
+  setCardPanelBrightness: (v: number) => void
 
   // Keyboard shortcuts (customizable)
   keybindings: { palette: string; search: string; sheet: string }
   setKeybinding: (name: 'palette' | 'search' | 'sheet', combo: string) => void
+
+  // Phase 18: Conductor Mode
+  mode: ConductorMode
+  setMode: (m: ConductorMode) => void
 }
 
 /**
@@ -91,11 +98,21 @@ function applyGlassBlur(v: number): void {
 }
 
 function applyPanelDarkness(v: number): void {
-  const opacity     = (0.02 + v * 0.10).toFixed(3)    // 0.02–0.12
-  const opacityDark = (0.01 + v * 0.07).toFixed(3)    // 0.01–0.08
+  // Controls white-tint opacity for all glass cards: 0 = transparent, 1 = frosted
+  // v=0.20 → 0.04 (Providers default) | v=1 → 0.20 (heavily frosted)
+  const alpha     = (v * 0.20).toFixed(3)
+  const alphaHov  = (v * 0.20 + 0.03).toFixed(3)
+  const alphaDark = (v * 0.14).toFixed(3)
   const s = document.documentElement.style
-  s.setProperty('--card-bg', `rgba(255,255,255,${opacity})`)
-  s.setProperty('--card-bg-dark', `rgba(255,255,255,${opacityDark})`)
+  s.setProperty('--card-bg',       `rgba(255,255,255,${alpha})`)
+  s.setProperty('--card-bg-hover', `rgba(255,255,255,${alphaHov})`)
+  s.setProperty('--card-bg-dark',  `rgba(255,255,255,${alphaDark})`)
+}
+
+function applyPanelBrightness(v: number): void {
+  // v=0 → 0.5 (dark/moody), v=0.5 → 1.0 (neutral), v=1 → 1.5 (bright/airy)
+  const brightness = (0.5 + v).toFixed(2)
+  document.documentElement.style.setProperty('--card-brightness', brightness)
 }
 
 /** @deprecated use applyGlassBlur + applyPanelDarkness */
@@ -190,15 +207,26 @@ export const useUIStore = create<UIStore>((set) => ({
     applyGlassBlur(v)
     set({ cardGlassIntensity: v })
   },
-  cardPanelDarkness: 0.40,
+  cardPanelDarkness: 0.20,
   setCardPanelDarkness: (v) => {
     applyPanelDarkness(v)
     set({ cardPanelDarkness: v })
+  },
+  cardPanelBrightness: 0.50,
+  setCardPanelBrightness: (v) => {
+    applyPanelBrightness(v)
+    set({ cardPanelBrightness: v })
   },
 
   keybindings: { palette: 'cmd+k', search: 'cmd+shift+f', sheet: 'cmd+/' },
   setKeybinding: (name, combo) =>
     set((state) => ({ keybindings: { ...state.keybindings, [name]: combo } })),
+
+  mode: 'claude-code',
+  setMode: (m) => {
+    document.documentElement.setAttribute('data-conductor-mode', m)
+    set({ mode: m })
+  },
 }))
 
 // Call anywhere outside React to fire a toast

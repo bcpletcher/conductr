@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Agent, ChatImage, Message, PromptTemplate } from '../env.d'
-import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
+import { AGENT_AVATARS, getAgentColor, getAgentTitle } from '../assets/agents'
 import MarkdownRenderer from '../components/MarkdownRenderer'
+import DirectiveRenderer from '../components/DirectiveRenderer'
 import { toast } from '../store/ui'
 
 const api = window.electronAPI
@@ -123,7 +124,7 @@ function CopyButton({ text }: { text: string }): React.JSX.Element {
   )
 }
 
-// ── Message bubble ─────────────────────────────────────────────────────────
+// ── Message row (Claude.ai document style — no bubbles) ────────────────────
 interface BubbleProps {
   msg: Message
   agent: Agent | null
@@ -142,34 +143,40 @@ function highlightText(text: string, query: string): React.ReactNode {
   )
 }
 
+// Small inline agent chip used as message header
+function AgentChip({ agent }: { agent: Agent | null }): React.JSX.Element {
+  const color = agent ? getAgentColor(agent.id) : '#818cf8'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+      <div style={{
+        width: 17, height: 17, borderRadius: 5,
+        background: `${color}20`, border: `1px solid ${color}45`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'block' }} />
+      </div>
+      <span style={{ fontSize: 11.5, fontWeight: 650, color, letterSpacing: '0.005em' }}>
+        {agent?.name ?? 'Agent'}
+      </span>
+    </div>
+  )
+}
+
 function MessageBubble({ msg, agent, onQueueAsTask, onToggleBookmark, searchQuery }: BubbleProps): React.JSX.Element {
   const [hovered, setHovered] = useState(false)
   const isUser = msg.role === 'user'
   const isBookmarked = msg.bookmarked === 1
 
+  // ── User turn: compact right-aligned block ────────────────────────────────
   if (isUser) {
     return (
       <div
-        className="flex justify-end mb-4 items-end gap-1.5"
+        className="flex justify-end mb-5"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div className="flex items-center gap-1" style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s' }}>
-          <button
-            onClick={() => onToggleBookmark(msg.id)}
-            title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
-              color: isBookmarked ? '#fbbf24' : 'rgba(255,255,255,0.3)',
-              padding: '3px 5px', borderRadius: 6, transition: 'color 0.15s',
-            }}
-          >
-            <i className={isBookmarked ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'} />
-          </button>
-          <CopyButton text={msg.content} />
-        </div>
-        <div>
-          {/* Image previews for user messages */}
+        <div style={{ maxWidth: '78%' }}>
+          {/* Image previews */}
           {msg.images && msg.images.length > 0 && (
             <div className="flex flex-wrap gap-1.5 justify-end mb-1.5">
               {msg.images.map((img, i) => (
@@ -186,104 +193,90 @@ function MessageBubble({ msg, agent, onQueueAsTask, onToggleBookmark, searchQuer
               ))}
             </div>
           )}
-          <div
-            className="max-w-[72%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm text-text-primary leading-relaxed"
-            style={{
-              background: 'rgba(99,102,241,0.18)',
-              border: '1px solid rgba(99,102,241,0.28)',
-              whiteSpace: 'pre-wrap',
-              maxWidth: '100%',
-            }}
-          >
+          {/* Text */}
+          <div style={{
+            padding: '9px 14px',
+            background: 'rgba(255,255,255,0.07)',
+            borderRadius: 14,
+            fontSize: 14, color: 'rgba(255,255,255,0.88)',
+            lineHeight: 1.65, whiteSpace: 'pre-wrap',
+          }}>
             {searchQuery ? highlightText(msg.content, searchQuery) : msg.content}
+          </div>
+          {/* Hover actions */}
+          <div style={{
+            display: 'flex', gap: 1, justifyContent: 'flex-end', marginTop: 3,
+            opacity: hovered ? 1 : 0, transition: 'opacity 0.15s',
+          }}>
+            <button
+              onClick={() => onToggleBookmark(msg.id)}
+              title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '2px 5px', borderRadius: 5, color: isBookmarked ? '#fbbf24' : 'rgba(255,255,255,0.28)' }}
+            >
+              <i className={isBookmarked ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'} />
+            </button>
+            <CopyButton text={msg.content} />
           </div>
         </div>
       </div>
     )
   }
 
+  // ── AI turn: full-width document style ───────────────────────────────────
   return (
     <div
-      className="flex items-start gap-2.5 mb-4"
+      className="mb-7"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {agent && <AgentAvatar agent={agent} size="sm" />}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1.5">
-          {agent && (
-            <div className="text-xs text-text-muted font-medium">{agent.name}</div>
-          )}
-          <div className="flex items-center gap-1" style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s' }}>
-            <button
-              onClick={() => onToggleBookmark(msg.id)}
-              title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
-                color: isBookmarked ? '#fbbf24' : 'rgba(255,255,255,0.3)',
-                padding: '3px 5px', borderRadius: 6, transition: 'color 0.15s',
-              }}
-            >
-              <i className={isBookmarked ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'} />
-            </button>
-            <CopyButton text={msg.content} />
-            <button
-              onClick={() => onQueueAsTask(msg.content)}
-              title="Queue as Workshop task"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
-                color: 'rgba(255,255,255,0.30)', padding: '3px 5px', borderRadius: 6,
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#34d399')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.30)')}
-            >
-              <i className="fa-solid fa-list-check" />
-            </button>
-          </div>
+      <AgentChip agent={agent} />
+      <div style={{ paddingLeft: 23 }}>
+        <MarkdownRenderer content={msg.content} />
+        {/* Hover action row */}
+        <div style={{
+          display: 'flex', gap: 1, marginTop: 6,
+          opacity: hovered ? 1 : 0, transition: 'opacity 0.15s',
+        }}>
+          <button
+            onClick={() => onToggleBookmark(msg.id)}
+            title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '2px 5px', borderRadius: 5, color: isBookmarked ? '#fbbf24' : 'rgba(255,255,255,0.28)' }}
+          >
+            <i className={isBookmarked ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'} />
+          </button>
+          <CopyButton text={msg.content} />
+          <button
+            onClick={() => onQueueAsTask(msg.content)}
+            title="Queue as Workshop task"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '2px 5px', borderRadius: 5, color: 'rgba(255,255,255,0.28)', transition: 'color 0.15s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#34d399')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.28)')}
+          >
+            <i className="fa-solid fa-list-check" />
+          </button>
           {isBookmarked && (
-            <i className="fa-solid fa-bookmark text-xs" style={{ color: '#fbbf24', fontSize: 9 }} />
+            <i className="fa-solid fa-bookmark" style={{ fontSize: 9, color: '#fbbf24', margin: '2px 4px', alignSelf: 'center' }} />
           )}
-        </div>
-        <div
-          className="inline-block max-w-full px-4 py-3 rounded-2xl rounded-tl-sm"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          <MarkdownRenderer content={msg.content} />
         </div>
       </div>
     </div>
   )
 }
 
-// ── Streaming bubble ───────────────────────────────────────────────────────
+// ── Streaming message (document style, live cursor) ────────────────────────
 function StreamingBubble({ content, agent }: { content: string; agent: Agent | null }): React.JSX.Element {
   return (
-    <div className="flex items-start gap-2.5 mb-4">
-      {agent && <AgentAvatar agent={agent} size="sm" />}
-      <div className="flex-1 min-w-0">
-        {agent && (
-          <div className="text-xs text-text-muted mb-1.5 font-medium">{agent.name}</div>
-        )}
-        <div
-          className="inline-block max-w-full px-4 py-3 rounded-2xl rounded-tl-sm"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          {content
-            ? (
-              <>
-                <MarkdownRenderer content={content} />
-                <span className="inline-block w-0.5 h-[0.9em] bg-accent ml-0.5 align-middle animate-pulse" />
-              </>
-            )
-            : <TypingDots />}
-        </div>
+    <div className="mb-7">
+      <AgentChip agent={agent} />
+      <div style={{ paddingLeft: 23 }}>
+        {content
+          ? (
+            <>
+              <MarkdownRenderer content={content} />
+              <span className="inline-block w-0.5 h-[0.9em] bg-accent ml-0.5 align-middle animate-pulse" />
+            </>
+          )
+          : <TypingDots />}
       </div>
     </div>
   )
@@ -293,25 +286,68 @@ function StreamingBubble({ content, agent }: { content: string; agent: Agent | n
 function EmptyThread({ agent }: { agent: Agent | null }): React.JSX.Element {
   if (!agent) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-text-muted">
-        <i className="fa-solid fa-robot text-2xl text-text-dim" />
-        <span className="text-sm">Select an agent to start chatting</span>
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <i className="fa-solid fa-robot" style={{ fontSize: 16, color: 'rgba(255,255,255,0.30)' }} />
+        </div>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Select an agent to start chatting</span>
       </div>
     )
   }
 
+  const title  = getAgentTitle(agent.id)
+  const accent = getAgentColor(agent.id)
+
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-text-muted">
-      <AgentAvatar agent={agent} size="lg" />
-      <div className="text-center">
-        <div className="text-base font-semibold text-text-primary mb-1">{agent.name}</div>
-        {agent.system_directive && (
-          <div className="text-xs max-w-[280px] text-center leading-relaxed opacity-70">
-            {agent.system_directive}
+    <div
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        height: '100%', paddingTop: 28, paddingBottom: 20,
+      }}
+    >
+      {/* Identity */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <AgentAvatar agent={agent} size="lg" />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 650, color: '#eef0f8', marginBottom: 3, letterSpacing: '-0.01em' }}>
+            {agent.name}
           </div>
-        )}
+          {title && (
+            <div style={{ fontSize: 11.5, color: accent, opacity: 0.7, letterSpacing: '0.01em' }}>
+              {title}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="text-xs opacity-50">Send a message to start chatting</div>
+
+      {/* Divider */}
+      <div style={{ flexShrink: 0, width: '100%', height: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 18 }} />
+
+      {/* Directive — 3-column grid to fill the width and stay compact vertically */}
+      {agent.system_directive && (
+        <div style={{ flexShrink: 0, width: '100%' }}>
+          <DirectiveRenderer text={agent.system_directive} accent={accent} columns={3} />
+        </div>
+      )}
+
+      {/* Spacer — pushes hint to the bottom */}
+      <div style={{ flex: 1 }} />
+
+      {/* Hint — prominent enough to be noticed */}
+      <div style={{
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 7,
+        fontSize: 13, color: 'rgba(255,255,255,0.38)',
+      }}>
+        <i className="fa-regular fa-comment-dots" style={{ fontSize: 12, color: accent, opacity: 0.5 }} />
+        Send a message to start chatting
+      </div>
     </div>
   )
 }
@@ -972,7 +1008,7 @@ export default function Chat(): React.JSX.Element {
             <p className="page-subtitle" style={{ marginTop: 2 }}>
               {broadcastMode
                 ? `Sending to ${broadcastSelected.length} agent${broadcastSelected.length !== 1 ? 's' : ''}`
-                : selectedAgent?.operational_role}
+                : getAgentTitle(selectedAgent?.id)}
             </p>
           </div>
         </div>

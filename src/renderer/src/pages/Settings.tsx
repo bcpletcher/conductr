@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useUIStore } from '../store/ui'
 import { WALLPAPER_PRESETS } from '../constants/wallpapers'
-import type { McpServer, McpRegistryEntry } from '../env.d'
+import type { McpServer, McpRegistryEntry, ConductorMode } from '../env.d'
 
 const api = window.electronAPI
 
@@ -225,8 +225,17 @@ export default function Settings(): React.JSX.Element {
   const setCardGlassIntensity  = useUIStore((s) => s.setCardGlassIntensity)
   const cardPanelDarkness      = useUIStore((s) => s.cardPanelDarkness)
   const setCardPanelDarkness   = useUIStore((s) => s.setCardPanelDarkness)
+  const cardPanelBrightness    = useUIStore((s) => s.cardPanelBrightness)
+  const setCardPanelBrightness = useUIStore((s) => s.setCardPanelBrightness)
+  const mode                   = useUIStore((s) => s.mode)
+  const setMode                = useUIStore((s) => s.setMode)
   const [saving, setSaving]    = useState(false)
   const [saved,  setSaved]     = useState(false)
+
+  // Mode-switch restart modal state
+  const [showRestartModal,    setShowRestartModal]    = useState(false)
+  const [pendingMode,         setPendingMode]         = useState<ConductorMode | null>(null)
+  const [restarting,          setRestarting]          = useState(false)
 
   // MCP Servers state
   const [mcpServers, setMcpServers] = useState<McpServer[]>([])
@@ -390,18 +399,33 @@ export default function Settings(): React.JSX.Element {
     await saveWallpaperStyle('custom')
   }
 
-  type SettingsSection = 'appearance' | 'notifications' | 'shortcuts' | 'integrations' | 'about'
-  const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
+  type SettingsSection = 'mode' | 'appearance' | 'notifications' | 'shortcuts' | 'integrations' | 'network' | 'about'
+  const [activeSection, setActiveSection] = useState<SettingsSection>('mode')
 
   const NAV_ITEMS: { id: SettingsSection; label: string; icon: string; description: string }[] = [
-    { id: 'appearance',    label: 'Appearance',    icon: 'fa-solid fa-palette',      description: 'Theme, colors, wallpaper' },
-    { id: 'notifications', label: 'Notifications', icon: 'fa-solid fa-bell',         description: 'Alerts and events' },
-    { id: 'shortcuts',     label: 'Shortcuts',     icon: 'fa-solid fa-keyboard',     description: 'Keyboard bindings' },
-    { id: 'integrations',  label: 'Integrations',  icon: 'fa-solid fa-plug',         description: 'MCP tool servers' },
-    { id: 'about',         label: 'About',         icon: 'fa-solid fa-circle-info',  description: 'App info & updates' },
+    { id: 'mode',          label: 'Mode',          icon: 'fa-solid fa-sliders',          description: 'Claude Code or API Key' },
+    { id: 'appearance',    label: 'Appearance',    icon: 'fa-solid fa-palette',          description: 'Theme, colors, wallpaper' },
+    { id: 'notifications', label: 'Notifications', icon: 'fa-solid fa-bell',             description: 'Alerts and events' },
+    { id: 'shortcuts',     label: 'Shortcuts',     icon: 'fa-solid fa-keyboard',         description: 'Keyboard bindings' },
+    { id: 'integrations',  label: 'Integrations',  icon: 'fa-solid fa-plug',             description: 'MCP tool servers' },
+    { id: 'network',       label: 'Network',       icon: 'fa-solid fa-network-wired',    description: 'Server mode & Tailscale' },
+    { id: 'about',         label: 'About',         icon: 'fa-solid fa-circle-info',      description: 'App info & updates' },
   ]
 
-  return (
+  function requestModeSwitch(newMode: ConductorMode): void {
+    setPendingMode(newMode)
+    setShowRestartModal(true)
+  }
+
+  async function confirmModeSwitch(): Promise<void> {
+    if (!pendingMode) return
+    setRestarting(true)
+    await api.settings.set('conductor_mode', pendingMode)
+    setMode(pendingMode)
+    await api.app.relaunch()
+  }
+
+  return (<>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="page-header" style={{ flexShrink: 0 }}>
         <h1 className="page-title">Settings</h1>
@@ -420,10 +444,12 @@ export default function Settings(): React.JSX.Element {
                 onClick={() => setActiveSection(item.id)}
                 style={{
                   width: '100%', textAlign: 'left', padding: '10px 12px',
-                  borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: isActive ? `${accentColor}14` : 'transparent',
-                  boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}30` : 'none',
-                  transition: 'background 0.12s', display: 'flex', alignItems: 'center', gap: 10,
+                  borderRadius: 10, cursor: 'pointer',
+                  background: isActive ? 'var(--card-bg, rgba(255,255,255,0.04))' : 'transparent',
+                  border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
+                  borderLeft: isActive ? `3px solid ${accentColor}` : '3px solid transparent',
+                  boxShadow: isActive ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 4px rgba(0,0,0,0.30)' : 'none',
+                  transition: 'all 0.12s', display: 'flex', alignItems: 'center', gap: 10,
                 }}
                 onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                 onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
@@ -454,6 +480,147 @@ export default function Settings(): React.JSX.Element {
 
         {/* ── Right content ──────────────────────────────── */}
         <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingBottom: 32 }}>
+
+      {/* ── Mode Section ─────────────────────────────────── */}
+      {activeSection === 'mode' && (
+        <section className="card p-5 mb-4">
+          <h2 className="text-sm font-semibold text-text-primary mb-1">Conductor Mode</h2>
+          <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.40)' }}>
+            Choose how Conductr executes agent tasks. A restart is required when switching modes.
+          </p>
+
+          {/* Mode cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Claude Code Mode */}
+            <div
+              onClick={() => mode !== 'claude-code' && requestModeSwitch('claude-code')}
+              style={{
+                padding: '16px 18px',
+                borderRadius: 12,
+                border: mode === 'claude-code'
+                  ? `2px solid ${accentColor}60`
+                  : '2px solid rgba(255,255,255,0.08)',
+                background: mode === 'claude-code'
+                  ? `${accentColor}0d`
+                  : 'rgba(255,255,255,0.02)',
+                cursor: mode !== 'claude-code' ? 'pointer' : 'default',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                  background: mode === 'claude-code' ? `${accentColor}20` : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${mode === 'claude-code' ? `${accentColor}40` : 'rgba(255,255,255,0.10)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <i className="fa-solid fa-code" style={{ fontSize: 14, color: mode === 'claude-code' ? accentColor : 'rgba(255,255,255,0.45)' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#eef0f8' }}>Claude Code Mode</span>
+                    {mode === 'claude-code' && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600,
+                        background: `${accentColor}25`, color: accentColor, letterSpacing: '0.04em',
+                      }}>ACTIVE</span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                    Tasks run via your Claude subscription — no API key needed
+                  </p>
+                </div>
+              </div>
+              <ul style={{ margin: 0, padding: '0 0 0 48px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {['Uses Claude Code CLI (claude)','Billed to your Claude subscription','Native context compaction','Agents work on project dirs in ~/.conductr/agents/'].map((f) => (
+                  <li key={f} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="fa-solid fa-check" style={{ fontSize: 9, color: '#34d399', flexShrink: 0 }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              {mode !== 'claude-code' && (
+                <div style={{ marginTop: 12, paddingLeft: 48 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); requestModeSwitch('claude-code') }}
+                    style={{
+                      padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                      background: `${accentColor}20`, color: accentColor,
+                      border: `1px solid ${accentColor}40`,
+                    }}
+                  >
+                    Switch to Claude Code Mode
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* API Key Mode */}
+            <div
+              onClick={() => mode !== 'api-key' && requestModeSwitch('api-key')}
+              style={{
+                padding: '16px 18px',
+                borderRadius: 12,
+                border: mode === 'api-key'
+                  ? '2px solid rgba(251,191,36,0.45)'
+                  : '2px solid rgba(255,255,255,0.08)',
+                background: mode === 'api-key'
+                  ? 'rgba(251,191,36,0.06)'
+                  : 'rgba(255,255,255,0.02)',
+                cursor: mode !== 'api-key' ? 'pointer' : 'default',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                  background: mode === 'api-key' ? 'rgba(251,191,36,0.16)' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${mode === 'api-key' ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.10)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <i className="fa-solid fa-key" style={{ fontSize: 13, color: mode === 'api-key' ? '#fbbf24' : 'rgba(255,255,255,0.45)' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#eef0f8' }}>API Key Mode</span>
+                    {mode === 'api-key' && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600,
+                        background: 'rgba(251,191,36,0.18)', color: '#fbbf24', letterSpacing: '0.04em',
+                      }}>ACTIVE</span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                    Direct API access with full provider control and usage metrics
+                  </p>
+                </div>
+              </div>
+              <ul style={{ margin: 0, padding: '0 0 0 48px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {['Anthropic, OpenRouter, Groq, Ollama & more','Per-token billing with live cost tracking','Multi-provider routing & fallback','Providers, API Manager & Dev Tools unlocked'].map((f) => (
+                  <li key={f} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="fa-solid fa-check" style={{ fontSize: 9, color: '#34d399', flexShrink: 0 }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              {mode !== 'api-key' && (
+                <div style={{ marginTop: 12, paddingLeft: 48 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); requestModeSwitch('api-key') }}
+                    style={{
+                      padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                      background: 'rgba(251,191,36,0.12)', color: '#fbbf24',
+                      border: '1px solid rgba(251,191,36,0.30)',
+                    }}
+                  >
+                    Switch to API Key Mode
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {activeSection === 'appearance' && (
       <section className="card p-5 mb-4">
@@ -696,8 +863,8 @@ export default function Settings(): React.JSX.Element {
         <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-sm font-semibold text-text-primary mb-4">Glass &amp; Display</p>
 
-          {/* Row layout — 3 sliders side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {/* Row layout — 2-column grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {/* Wallpaper brightness (moved from above) */}
             {(wallpaperStyle !== 'none') && (
               <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
@@ -741,10 +908,10 @@ export default function Settings(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Panel darkness */}
+            {/* Panel opacity */}
             <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
               <div className="flex items-center justify-between mb-2">
-                <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Panel Tint</p>
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Panel Opacity</p>
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontFamily: 'monospace' }}>{Math.round(cardPanelDarkness * 100)}%</span>
               </div>
               <input
@@ -760,6 +927,28 @@ export default function Settings(): React.JSX.Element {
               <div className="flex justify-between mt-1">
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Ghost</span>
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Solid</span>
+              </div>
+            </div>
+
+            {/* Panel brightness */}
+            <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+              <div className="flex items-center justify-between mb-2">
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Panel Brightness</p>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontFamily: 'monospace' }}>{Math.round((0.5 + cardPanelBrightness) * 100)}%</span>
+              </div>
+              <input
+                type="range" min={0} max={1} step={0.05}
+                value={cardPanelBrightness}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value)
+                  setCardPanelBrightness(v)
+                  api.settings.set('card_panel_brightness', String(v)).catch(() => {})
+                }}
+                style={{ width: '100%', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+              />
+              <div className="flex justify-between mt-1">
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Dark</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Bright</span>
               </div>
             </div>
           </div>
@@ -1133,6 +1322,10 @@ export default function Settings(): React.JSX.Element {
       </>
       )}
 
+      {activeSection === 'network' && (
+        <NetworkTab accent={accentColor} />
+      )}
+
       {activeSection === 'about' && (
       <section className="card p-5">
         <h2 className="text-sm font-semibold text-text-primary mb-4">About</h2>
@@ -1152,6 +1345,521 @@ export default function Settings(): React.JSX.Element {
       </div> {/* flex row */}
     </div>
   )
+}
+
+// ── NetworkTab ─────────────────────────────────────────────────────────────────
+
+function NetworkTab({ accent }: { accent: string }): React.JSX.Element {
+  const [status, setStatus] = useState<import('../env.d').NetworkStatus | null>(null)
+  const [peers, setPeers] = useState<import('../env.d').PeerInfo[]>([])
+  const [showConnectForm, setShowConnectForm] = useState(false)
+  const [connectIp, setConnectIp] = useState('')
+  const [connectCode, setConnectCode] = useState('')
+  const [connecting, setConnecting] = useState(false)
+  const [connectError, setConnectError] = useState('')
+  const [hostConnected, setHostConnected] = useState(true)
+
+  useEffect(() => {
+    api.network.getStatus().then(setStatus).catch(() => {})
+    api.network.getTailscalePeers().then(setPeers).catch(() => {})
+
+    api.network.onStatusChange((s) => setStatus(s as import('../env.d').NetworkStatus))
+    api.network.onConnectionStatus(({ connected }) => setHostConnected(connected))
+
+    return () => {
+      api.network.removeAllListeners()
+    }
+  }, [])
+
+  const card: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: 12,
+    padding: '16px 18px',
+    marginBottom: 14,
+  }
+
+  const label14: React.CSSProperties = {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.40)',
+    marginBottom: 3,
+    letterSpacing: '0.03em',
+    textTransform: 'uppercase' as const,
+    fontWeight: 600,
+  }
+
+  const infoValue: React.CSSProperties = {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+    fontFamily: 'monospace',
+    wordBreak: 'break-all' as const,
+  }
+
+  // Status color for the top border
+  const modeColor = status?.mode === 'host' ? '#818cf8'
+                  : status?.mode === 'client' ? '#34d399'
+                  : 'rgba(255,255,255,0.18)'
+
+  const modeLabel = status?.mode === 'host' ? 'Host'
+                  : status?.mode === 'client' ? 'Client'
+                  : 'Standalone'
+
+  async function handleEnableHost(): Promise<void> {
+    const res = await api.network.enableHostMode()
+    setStatus(await api.network.getStatus())
+    if (!res.ok) return
+  }
+
+  async function handleDisableHost(): Promise<void> {
+    await api.network.disableHostMode()
+    setStatus(await api.network.getStatus())
+  }
+
+  async function handleRegen(): Promise<void> {
+    await api.network.regeneratePairingCode()
+    setStatus(await api.network.getStatus())
+  }
+
+  async function handleConnect(): Promise<void> {
+    if (!connectIp.trim() || !connectCode.trim()) return
+    setConnecting(true)
+    setConnectError('')
+    const res = await api.network.connectToHost(connectIp.trim(), connectCode.trim())
+    setConnecting(false)
+    if (res.ok) {
+      setShowConnectForm(false)
+      setConnectIp('')
+      setConnectCode('')
+      setStatus(await api.network.getStatus())
+    } else {
+      setConnectError(res.error ?? 'Connection failed')
+    }
+  }
+
+  async function handleDisconnect(): Promise<void> {
+    await api.network.disconnectFromHost()
+    setStatus(await api.network.getStatus())
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '8px 11px',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: 8,
+    fontSize: 13,
+    color: '#f1f5f9',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  }
+
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      {/* ── Status card ──────────────────────────────────── */}
+      <div style={{
+        ...card,
+        borderTop: `2px solid ${modeColor}`,
+        background: `rgba(255,255,255,0.035)`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h2 className="text-sm font-semibold text-text-primary">Network Mode</h2>
+          <span style={{
+            fontSize: 10.5,
+            fontWeight: 700,
+            letterSpacing: '0.07em',
+            textTransform: 'uppercase',
+            padding: '3px 9px',
+            borderRadius: 20,
+            background: `${modeColor}20`,
+            border: `1px solid ${modeColor}50`,
+            color: modeColor,
+          }}>
+            {modeLabel}
+          </span>
+        </div>
+
+        {/* IPs */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div>
+            <div style={label14}>LAN IP</div>
+            <div style={infoValue}>{status?.lanIp ?? '—'}</div>
+          </div>
+          <div>
+            <div style={label14}>Tailscale IP</div>
+            <div style={infoValue}>{status?.tailscaleIp ?? '—'}</div>
+          </div>
+        </div>
+
+        {/* Actions — standalone mode */}
+        {status?.mode === 'standalone' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={handleEnableHost}
+              style={{
+                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                background: `${accent}18`, border: `1px solid ${accent}45`, color: accent,
+              }}
+            >
+              <i className="fa-solid fa-server mr-1.5" style={{ fontSize: 10 }} />
+              Enable Host Mode
+            </button>
+            <button
+              onClick={() => { setShowConnectForm(true); setConnectError('') }}
+              style={{
+                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.65)',
+              }}
+            >
+              <i className="fa-solid fa-plug mr-1.5" style={{ fontSize: 10 }} />
+              Connect to Host
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Connect-to-host form ─────────────────────────── */}
+      {status?.mode === 'standalone' && showConnectForm && (
+        <div style={card}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', marginBottom: 12 }}>
+            Connect to Host
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <div style={{ ...label14, marginBottom: 5 }}>Host IP</div>
+              <input
+                type="text"
+                placeholder="192.168.1.x or Tailscale IP"
+                value={connectIp}
+                onChange={(e) => setConnectIp(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <div style={{ ...label14, marginBottom: 5 }}>6-Digit Pairing Code</div>
+              <input
+                type="text"
+                placeholder="123456"
+                value={connectCode}
+                onChange={(e) => setConnectCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                style={inputStyle}
+              />
+            </div>
+            {connectError && (
+              <div style={{ fontSize: 12, color: '#f87171', padding: '6px 10px', background: 'rgba(239,68,68,0.10)', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)' }}>
+                {connectError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+              <button
+                onClick={() => void handleConnect()}
+                disabled={connecting || !connectIp || connectCode.length < 6}
+                style={{
+                  padding: '7px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                  background: connecting ? 'rgba(255,255,255,0.06)' : `${accent}20`,
+                  border: `1px solid ${accent}45`,
+                  color: connecting ? 'rgba(255,255,255,0.35)' : accent,
+                  opacity: !connectIp || connectCode.length < 6 ? 0.5 : 1,
+                }}
+              >
+                {connecting
+                  ? <><i className="fa-solid fa-spinner fa-spin mr-1.5" style={{ fontSize: 10 }} />Connecting…</>
+                  : 'Connect'}
+              </button>
+              <button
+                onClick={() => { setShowConnectForm(false); setConnectError('') }}
+                style={{
+                  padding: '7px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.10)',
+                  color: 'rgba(255,255,255,0.45)',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Host Mode section ─────────────────────────────── */}
+      {status?.mode === 'host' && (
+        <>
+          {/* Pairing code card */}
+          <div style={{ ...card, background: 'rgba(0,0,0,0.20)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>Pairing Code</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
+                  Share with your client machine. Expires when host mode is disabled.
+                </div>
+              </div>
+              <button
+                onClick={() => void handleRegen()}
+                style={{
+                  padding: '5px 11px', borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.55)',
+                }}
+              >
+                <i className="fa-solid fa-arrows-rotate mr-1" style={{ fontSize: 10 }} />
+                Regenerate
+              </button>
+            </div>
+            <div style={{
+              fontSize: 30,
+              fontFamily: 'monospace',
+              letterSpacing: '0.22em',
+              color: '#eef0f8',
+              padding: '10px 0 6px',
+              textAlign: 'center',
+            }}>
+              {status.pairingCode ?? '——————'}
+            </div>
+          </div>
+
+          {/* Host info row */}
+          <div style={{ ...card, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={label14}>Server Port</div>
+              <div style={infoValue}>9876</div>
+            </div>
+            <div>
+              <div style={label14}>Connected Clients</div>
+              <div style={infoValue}>{status.connectedClients}</div>
+            </div>
+            <div>
+              <div style={label14}>Server Running</div>
+              <div style={{ fontSize: 13, color: status.hostServerRunning ? '#34d399' : '#f87171' }}>
+                <i className={`fa-solid ${status.hostServerRunning ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1.5`} />
+                {status.hostServerRunning ? 'Active' : 'Stopped'}
+              </div>
+            </div>
+          </div>
+
+          {/* Disable button */}
+          <button
+            onClick={() => void handleDisableHost()}
+            style={{
+              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+              color: '#f87171', marginBottom: 14,
+            }}
+          >
+            <i className="fa-solid fa-stop mr-1.5" style={{ fontSize: 10 }} />
+            Disable Host Mode
+          </button>
+        </>
+      )}
+
+      {/* ── Client Mode section ───────────────────────────── */}
+      {status?.mode === 'client' && (
+        <>
+          {/* Offline warning */}
+          {!hostConnected && (
+            <div style={{
+              padding: '9px 14px', marginBottom: 10,
+              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.28)',
+              borderRadius: 9, fontSize: 12, color: '#fbbf24',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <i className="fa-solid fa-triangle-exclamation" />
+              Host unreachable — running with local data only.
+            </div>
+          )}
+
+          <div style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', marginBottom: 4 }}>
+                  Connected Host
+                </div>
+                <div style={{ fontSize: 12, fontFamily: 'monospace', color: 'rgba(255,255,255,0.65)' }}>
+                  {status.lanIp ?? 'Unknown IP'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: hostConnected ? '#34d399' : '#f87171',
+                    boxShadow: hostConnected ? '0 0 6px #34d399' : 'none',
+                    animation: hostConnected ? 'pulse 2s infinite' : 'none',
+                  }} />
+                  <span style={{ color: hostConnected ? '#34d399' : '#f87171' }}>
+                    {hostConnected ? 'Connected' : 'Offline'}
+                  </span>
+                </span>
+                <button
+                  onClick={() => void handleDisconnect()}
+                  style={{
+                    padding: '5px 11px', borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: 'pointer',
+                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                    color: '#f87171',
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Tailscale section ─────────────────────────────── */}
+      <div style={{ ...card, marginTop: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>Tailscale</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
+              Secure remote access without port forwarding
+            </div>
+          </div>
+          {!status?.tailscaleIp && (
+            <button
+              onClick={() => void api.network.installTailscale()}
+              style={{
+                padding: '5px 11px', borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: 'pointer',
+                background: `${accent}14`, border: `1px solid ${accent}35`, color: accent,
+              }}
+            >
+              <i className="fa-solid fa-arrow-up-right-from-square mr-1" style={{ fontSize: 9 }} />
+              Install Tailscale
+            </button>
+          )}
+        </div>
+
+        {status?.tailscaleIp ? (
+          <div style={{ marginBottom: peers.length > 0 ? 12 : 0 }}>
+            <div style={label14}>Your Tailscale IP</div>
+            <div style={{ ...infoValue, color: '#34d399' }}>{status.tailscaleIp}</div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: peers.length > 0 ? 12 : 0 }}>
+            Tailscale not detected on this machine.
+          </div>
+        )}
+
+        {peers.length > 0 && (
+          <div>
+            <div style={{ ...label14, marginBottom: 8 }}>Network Peers ({peers.length})</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {peers.map((peer) => (
+                <div
+                  key={peer.ip}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 12.5, color: '#f1f5f9' }}>{peer.name}</div>
+                    <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>{peer.ip}</div>
+                  </div>
+                  {peer.isConductrHost && (
+                    <button
+                      onClick={() => { setConnectIp(peer.ip); setShowConnectForm(true) }}
+                      style={{
+                        padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                        background: `${accent}14`, border: `1px solid ${accent}35`, color: accent,
+                      }}
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* ── Restart Required Modal ─────────────────────────────── */}
+    {showRestartModal && (
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.70)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+        onClick={() => !restarting && setShowRestartModal(false)}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: 420, padding: '28px 28px 24px',
+            background: 'rgba(12,13,26,0.96)',
+            backdropFilter: 'blur(48px) saturate(1.4)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 16,
+            boxShadow: '0 32px 80px rgba(0,0,0,0.80)',
+          }}
+        >
+          {/* Icon + title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+              background: 'rgba(251,191,36,0.14)',
+              border: '1px solid rgba(251,191,36,0.30)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: 16, color: '#fbbf24' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#eef0f8' }}>Restart Required</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+                Switching to {pendingMode === 'claude-code' ? 'Claude Code Mode' : 'API Key Mode'}
+              </div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.55, marginBottom: 20 }}>
+            {pendingMode === 'claude-code'
+              ? 'Conductr will switch to using the Claude Code CLI for all task execution. Make sure you have the claude CLI installed before switching.'
+              : 'Conductr will unlock Providers, API Manager, and Dev Tools. You\'ll need to configure at least one API key to run tasks.'
+            }
+            {' '}The app will restart automatically to apply the change.
+          </p>
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setShowRestartModal(false)}
+              disabled={restarting}
+              style={{
+                padding: '8px 18px', borderRadius: 9, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmModeSwitch}
+              disabled={restarting}
+              style={{
+                padding: '8px 18px', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: restarting ? 'default' : 'pointer',
+                background: restarting ? 'rgba(251,191,36,0.14)' : 'rgba(251,191,36,0.20)',
+                color: '#fbbf24',
+                border: '1px solid rgba(251,191,36,0.35)',
+                display: 'flex', alignItems: 'center', gap: 7,
+              }}
+            >
+              {restarting
+                ? <><i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 11 }} /> Restarting…</>
+                : <><i className="fa-solid fa-arrow-rotate-right" style={{ fontSize: 11 }} /> Switch & Restart</>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>)
 }
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {

@@ -126,20 +126,18 @@ export default function Documents(): React.JSX.Element {
           className="flex flex-col gap-2 overflow-y-auto flex-shrink-0 rounded-2xl p-2"
           style={{
             width: 320,
-            background: 'rgba(6, 8, 22, 0.74)',
+            background: 'var(--card-bg, rgba(255,255,255,0.04))',
+            backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
+            WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
             border: '1px solid rgba(255,255,255,0.07)',
             borderTopColor: 'rgba(255,255,255,0.11)',
-            backdropFilter: 'blur(48px) saturate(1.1)',
-            WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.60)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
           }}
         >
           {documents.length === 0 ? (
-            <div className="card flex flex-col items-center justify-center py-16 text-center gap-3">
-              <i className="fa-solid fa-file-lines text-text-muted" style={{ fontSize: 28 }} />
-              <div style={{ fontSize: 13, color: '#64748b' }}>
-                No documents yet —<br />completed tasks will generate documents here
-              </div>
+            <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              <i className="fa-solid fa-file-lines text-xl" style={{ color: 'rgba(255,255,255,0.30)' }} />
+              <span className="text-sm">No documents yet</span>
             </div>
           ) : (
             documents.map(doc => {
@@ -152,12 +150,13 @@ export default function Documents(): React.JSX.Element {
                   key={doc.id}
                   data-testid="document-card"
                   onClick={() => setSelectedId(isSelected ? null : doc.id)}
-                  className="card p-3.5 cursor-pointer transition-all"
+                  className="p-3.5 cursor-pointer transition-all"
                   style={{
+                    borderRadius: 10,
                     border: isSelected
-                      ? '1px solid rgba(139,124,248,0.4)'
-                      : '1px solid rgba(255,255,255,0.06)',
-                    background: isSelected ? 'rgba(139,124,248,0.08)' : undefined,
+                      ? '1px solid rgba(139,124,248,0.35)'
+                      : '1px solid transparent',
+                    background: isSelected ? 'rgba(139,124,248,0.10)' : 'rgba(0,0,0,0.12)',
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">

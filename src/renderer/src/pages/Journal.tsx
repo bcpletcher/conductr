@@ -92,7 +92,7 @@ export default function Journal(): React.JSX.Element {
         </button>
       </div>
 
-      {/* Search */}
+      {/* Search — outside the card, like Documents */}
       <div className="flex-shrink-0 mb-3">
         <div className="relative">
           <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" style={{ fontSize: 12 }} />
@@ -103,14 +103,14 @@ export default function Journal(): React.JSX.Element {
             onChange={e => setQuery(e.target.value)}
             className="w-full pl-8 pr-4 py-2 rounded-xl text-sm text-text-primary placeholder-text-muted outline-none"
             style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(0,0,0,0.12)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4">
+      <div className="card flex-1 overflow-y-auto p-4 space-y-4" style={{ minHeight: 0 }}>
         {/* New entry compose form */}
         {composing && (
           <div className="card p-4 space-y-3">
@@ -154,9 +154,14 @@ export default function Journal(): React.JSX.Element {
 
         {/* Empty state */}
         {entries.length === 0 && !composing && (
-          <div className="card flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <i className="fa-solid fa-book-open text-text-muted" style={{ fontSize: 28 }} />
-            <div style={{ fontSize: 13, color: '#64748b' }}>
+          <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <i className="fa-solid fa-book-open" style={{ fontSize: 16, color: 'rgba(255,255,255,0.32)' }} />
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
               No journal entries yet —<br />completed tasks will be logged here automatically
             </div>
           </div>

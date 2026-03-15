@@ -4,6 +4,7 @@ import TaskCard from '../components/TaskCard'
 import StatusBadge from '../components/StatusBadge'
 import ActivityFeed from '../components/ActivityFeed'
 import Modal from '../components/Modal'
+import TabBar from '../components/TabBar'
 import type { Task, ActivityLogEntry, Agent, Document, Client } from '../env.d'
 
 const api = window.electronAPI
@@ -148,7 +149,7 @@ interface BoardViewProps {
 
 function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): React.JSX.Element {
   return (
-    <div data-testid="board-view" className="flex gap-4 overflow-x-auto pb-4">
+    <div data-testid="board-view" className="flex gap-4 overflow-x-auto p-4 h-full">
       {BOARD_COLUMNS.map((col) => {
         const colTasks = tasks.filter((t) => t.status === col.status)
         return (
@@ -157,12 +158,10 @@ function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): Reac
             className="flex flex-col rounded-2xl p-3"
             style={{
               minWidth: 240, flex: '1 1 0',
-              background: 'rgba(6, 8, 22, 0.55)',
+              background: 'rgba(0,0,0,0.15)',
               border: '1px solid rgba(255,255,255,0.07)',
               borderTopColor: 'rgba(255,255,255,0.11)',
-              backdropFilter: 'blur(40px) saturate(1.1)',
-              WebkitBackdropFilter: 'blur(40px) saturate(1.1)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(0,0,0,0.50)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
           >
             {/* Column header */}
@@ -191,7 +190,7 @@ function BoardView({ tasks, agents, openTask, startTask }: BoardViewProps): Reac
             {/* Card stack */}
             <div
               className="flex flex-col gap-2 overflow-y-auto pr-0.5"
-              style={{ maxHeight: 'calc(100vh - 280px)' }}
+              style={{ maxHeight: 'calc(100vh - 320px)' }}
             >
               {colTasks.length === 0 ? (
                 <div
@@ -645,55 +644,53 @@ export default function Workshop(): React.JSX.Element {
 
       {/* ── List view ──────────────────────────────────────────────────────── */}
       {viewMode === 'list' && (
-        <>
+        <div className="card flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
           {/* Tab bar */}
-          <div className="flex items-center gap-1 mb-5 border-b border-border">
-            {(['queued', 'active', 'complete'] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 text-sm font-medium transition-colors capitalize border-b-2 -mb-px ${
-                  tab === t
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                {t} ({counts[t]})
-              </button>
-            ))}
-          </div>
+          <TabBar
+            tabs={[
+              { id: 'queued',   label: 'Queued',   count: counts.queued },
+              { id: 'active',   label: 'Active',   count: counts.active },
+              { id: 'complete', label: 'Complete', count: counts.complete },
+            ]}
+            active={tab}
+            onChange={(id) => setTab(id as Tab)}
+          />
 
           {/* Task list */}
-          {filtered.length === 0 ? (
-            <div className="card flex flex-col items-center justify-center gap-3 py-16">
-              <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.04] flex items-center justify-center">
-                <i className={`fa-solid ${tab === 'queued' ? 'fa-clock' : tab === 'active' ? 'fa-bolt' : 'fa-circle-check'} text-text-dim text-base`} />
+          <div className="flex-1 overflow-y-auto p-4">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <i className={`fa-solid ${tab === 'queued' ? 'fa-clock' : tab === 'active' ? 'fa-bolt' : 'fa-circle-check'} text-text-dim text-base`} />
+                </div>
+                <span className="text-sm text-text-muted">No {tab} tasks</span>
               </div>
-              <span className="text-sm text-text-muted">No {tab} tasks</span>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onClick={() => openTask(task)}
-                  onStart={() => handleStartFromCard(task.id)}
-                />
-              ))}
-            </div>
-          )}
-        </>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onClick={() => openTask(task)}
+                    onStart={() => handleStartFromCard(task.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ── Board view ─────────────────────────────────────────────────────── */}
       {viewMode === 'board' && (
-        <BoardView
-          tasks={tasks}
-          agents={agents}
-          openTask={openTask}
-          startTask={handleStartFromCard}
-        />
+        <div className="card flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+          <BoardView
+            tasks={tasks}
+            agents={agents}
+            openTask={openTask}
+            startTask={handleStartFromCard}
+          />
+        </div>
       )}
 
       {/* ── Task detail modal ──────────────────────────────────────────────── */}

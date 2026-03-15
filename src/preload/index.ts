@@ -263,6 +263,8 @@ const api = {
       ipcRenderer.on('tray:navigate', (_e, page: string) => cb(page)),
     removeTrayNavigateListener: () =>
       ipcRenderer.removeAllListeners('tray:navigate'),
+    /** Relaunch the app — used after conductor mode change */
+    relaunch: () => ipcRenderer.invoke('app:relaunch'),
   },
 
   // Window controls — used by custom title bar on Windows
@@ -365,6 +367,78 @@ const api = {
       ipcRenderer.invoke('mcp:setAgentServers', agentId, serverIds),
     getRegistry: () => ipcRenderer.invoke('mcp:getRegistry'),
     getStatuses: () => ipcRenderer.invoke('mcp:getStatuses'),
+  },
+
+  // Network / Server Mode (Phase 16)
+  network: {
+    getStatus:              () => ipcRenderer.invoke('network:getStatus'),
+    enableHostMode:         () => ipcRenderer.invoke('network:enableHostMode'),
+    disableHostMode:        () => ipcRenderer.invoke('network:disableHostMode'),
+    regeneratePairingCode:  () => ipcRenderer.invoke('network:regeneratePairingCode'),
+    connectToHost:          (ip: string, code: string) =>
+      ipcRenderer.invoke('network:connectToHost', ip, code),
+    disconnectFromHost:     () => ipcRenderer.invoke('network:disconnectFromHost'),
+    getTailscalePeers:      () => ipcRenderer.invoke('network:getTailscalePeers'),
+    installTailscale:       () => ipcRenderer.invoke('network:installTailscale'),
+    isClientActive:         () => ipcRenderer.invoke('network:isClientActive'),
+    onStatusChange: (cb: (s: unknown) => void) =>
+      ipcRenderer.on('network:statusChange', (_e, data) => cb(data)),
+    onConnected: (cb: (data: { hostIp: string }) => void) =>
+      ipcRenderer.on('network:connected', (_e, data) => cb(data as { hostIp: string })),
+    onConnectionStatus: (cb: (data: { connected: boolean }) => void) =>
+      ipcRenderer.on('network:connectionStatus', (_e, data) => cb(data as { connected: boolean })),
+    removeAllListeners: () => {
+      ipcRenderer.removeAllListeners('network:statusChange')
+      ipcRenderer.removeAllListeners('network:connected')
+      ipcRenderer.removeAllListeners('network:connectionStatus')
+    },
+  },
+
+  // Pipelines & Swarms (Phase 17)
+  pipelines: {
+    getAll:          (templatesOnly?: boolean) => ipcRenderer.invoke('pipelines:getAll', templatesOnly),
+    getById:         (id: string)              => ipcRenderer.invoke('pipelines:getById', id),
+    create:          (input: unknown)          => ipcRenderer.invoke('pipelines:create', input),
+    update:          (id: string, updates: unknown) => ipcRenderer.invoke('pipelines:update', id, updates),
+    delete:          (id: string)              => ipcRenderer.invoke('pipelines:delete', id),
+    start:           (pipelineId: string)      => ipcRenderer.invoke('pipelines:start', pipelineId),
+    getRecentRuns:   (limit?: number)          => ipcRenderer.invoke('pipelines:getRecentRuns', limit),
+    getRuns:         (pipelineId: string, limit?: number) => ipcRenderer.invoke('pipelines:getRuns', pipelineId, limit),
+    getRunDetail:    (runId: string)           => ipcRenderer.invoke('pipelines:getRunDetail', runId),
+    decompose:       (goal: string)            => ipcRenderer.invoke('pipelines:decompose', goal),
+    startSwarm:      (goal: string)            => ipcRenderer.invoke('pipelines:startSwarm', goal),
+    onRunUpdate: (cb: (data: unknown) => void) =>
+      ipcRenderer.on('pipelines:runUpdate', (_e, data) => cb(data)),
+    removeAllListeners: () => {
+      ipcRenderer.removeAllListeners('pipelines:runUpdate')
+    },
+  },
+
+  // OpenClaw Gateway (Phase 15)
+  openclaw: {
+    getStatus: () => ipcRenderer.invoke('openclaw:getStatus'),
+    install:   () => ipcRenderer.invoke('openclaw:install'),
+    restart:   () => ipcRenderer.invoke('openclaw:restart'),
+    start:     () => ipcRenderer.invoke('openclaw:start'),
+    stop:      () => ipcRenderer.invoke('openclaw:stop'),
+    listChannels: () => ipcRenderer.invoke('openclaw:listChannels'),
+    addChannel: (input: { name: string; type: string; config?: Record<string, string>; routing_agent_id?: string }) =>
+      ipcRenderer.invoke('openclaw:addChannel', input),
+    updateChannel: (id: string, updates: Record<string, unknown>) =>
+      ipcRenderer.invoke('openclaw:updateChannel', id, updates),
+    removeChannel: (id: string) => ipcRenderer.invoke('openclaw:removeChannel', id),
+    testChannel:   (id: string) => ipcRenderer.invoke('openclaw:testChannel', id),
+    onStatusChange: (cb: (status: unknown) => void) =>
+      ipcRenderer.on('openclaw:statusChange', (_e, data) => cb(data)),
+    removeStatusListener: () => ipcRenderer.removeAllListeners('openclaw:statusChange'),
+  },
+
+  // Claude Code Mode (Phase 18)
+  claudeCode: {
+    checkCli:      () => ipcRenderer.invoke('claudecode:checkCli'),
+    getAgentDir:   (agentId: string) => ipcRenderer.invoke('claudecode:getAgentDir', agentId),
+    syncAgent:     (agentId: string) => ipcRenderer.invoke('claudecode:syncAgent', agentId),
+    syncAllAgents: () => ipcRenderer.invoke('claudecode:syncAllAgents'),
   },
 
   // Intelligence

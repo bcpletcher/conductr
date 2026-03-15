@@ -94,7 +94,7 @@ export default function Intelligence(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="card flex-1 overflow-y-auto p-4 space-y-3" style={{ minHeight: 0 }}>
         {/* Streaming card */}
         {isGenerating && (
           <div className="card p-4">
@@ -148,9 +148,14 @@ export default function Intelligence(): React.JSX.Element {
 
         {/* Empty state */}
         {insights.length === 0 && !isGenerating && (
-          <div className="card flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <i className="fa-solid fa-brain text-text-muted" style={{ fontSize: 28 }} />
-            <div style={{ fontSize: 13, color: '#64748b' }}>
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <i className="fa-solid fa-brain" style={{ fontSize: 16, color: 'rgba(255,255,255,0.32)' }} />
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
               No insights yet —<br />generate one to analyse your recent activity
             </div>
           </div>

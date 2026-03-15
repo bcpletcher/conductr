@@ -10,18 +10,19 @@ test.describe('Dev Tools page', () => {
     await expect(page.locator('[data-testid="devtools-page"]')).toBeVisible()
   })
 
-  test('shows GitHub Token section', async ({ page }) => {
+  test('shows Dev Tools tab bar', async ({ page }) => {
+    // Tab bar always visible regardless of active tab
     await expect(
-      page.locator('[data-testid="devtools-page"]').getByText('GitHub Token')
+      page.locator('[data-testid="devtools-page"]').getByRole('button', { name: 'Repos' })
+    ).toBeVisible()
+    await expect(
+      page.locator('[data-testid="devtools-page"]').getByRole('button', { name: 'GitHub' })
     ).toBeVisible()
   })
 
-  test('shows repository section', async ({ page }) => {
+  test('shows Developer Tools heading', async ({ page }) => {
     await expect(
-      page.locator('[data-testid="devtools-page"]')
-        .getByText('Repository')
-        .or(page.locator('[data-testid="devtools-page"]').getByText('Repository'))
-        .first()
+      page.locator('[data-testid="devtools-page"]').getByRole('heading', { name: 'Developer Tools' })
     ).toBeVisible()
   })
 })

@@ -37,6 +37,8 @@ import Settings from './pages/Settings'
 import Storyboard from './pages/Blueprint'
 import Providers from './pages/Providers'
 import DevTools from './pages/DevTools'
+import Channels from './pages/Channels'
+import Pipelines from './pages/Pipelines'
 
 export type NavPage =
   | 'dashboard'
@@ -52,6 +54,8 @@ export type NavPage =
   | 'devtools'
   | 'settings'
   | 'blueprint'
+  | 'channels'
+  | 'pipelines'
 
 const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   dashboard: Dashboard,
@@ -67,6 +71,8 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   devtools: DevTools,
   settings: Settings,
   blueprint: Storyboard,
+  channels: Channels,
+  pipelines: Pipelines,
 }
 
 export default function App(): React.JSX.Element {
@@ -81,8 +87,12 @@ export default function App(): React.JSX.Element {
   const setDensity             = useUIStore((s) => s.setDensity)
   const setWallpaperStyle      = useUIStore((s) => s.setWallpaperStyle)
   const setCustomWallpaperPath = useUIStore((s) => s.setCustomWallpaperPath)
+  const setCardGlassIntensity  = useUIStore((s) => s.setCardGlassIntensity)
+  const setCardPanelDarkness   = useUIStore((s) => s.setCardPanelDarkness)
+  const setCardPanelBrightness = useUIStore((s) => s.setCardPanelBrightness)
   const keybindings            = useUIStore((s) => s.keybindings)
   const setKeybinding          = useUIStore((s) => s.setKeybinding)
+  const setMode                = useUIStore((s) => s.setMode)
 
   // Show onboarding on first launch (if not completed; skip in test mode or when env var is set)
   useEffect(() => {
@@ -110,6 +120,15 @@ export default function App(): React.JSX.Element {
     window.electronAPI.settings.get('wallpaper_custom').then((val) => {
       if (val) setCustomWallpaperPath(val)
     })
+    window.electronAPI.settings.get('card_glass_intensity').then((val) => {
+      if (val !== null) setCardGlassIntensity(parseFloat(val))
+    })
+    window.electronAPI.settings.get('card_panel_darkness').then((val) => {
+      if (val !== null) setCardPanelDarkness(parseFloat(val))
+    })
+    window.electronAPI.settings.get('card_panel_brightness').then((val) => {
+      if (val !== null) setCardPanelBrightness(parseFloat(val))
+    })
     window.electronAPI.settings.get('kb_palette').then((val) => {
       if (val) setKeybinding('palette', val)
     })
@@ -119,7 +138,10 @@ export default function App(): React.JSX.Element {
     window.electronAPI.settings.get('kb_sheet').then((val) => {
       if (val) setKeybinding('sheet', val)
     })
-  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath, setKeybinding])
+    window.electronAPI.settings.get('conductor_mode').then((val) => {
+      if (val === 'claude-code' || val === 'api-key') setMode(val)
+    })
+  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath, setCardGlassIntensity, setCardPanelDarkness, setCardPanelBrightness, setKeybinding, setMode])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -156,6 +178,18 @@ export default function App(): React.JSX.Element {
         addToast(`Update ${version ?? ''} ready — restart to install`, 'success')
     })
     return () => window.electronAPI.update.removeStatusListener()
+  }, [addToast])
+
+  // Phase 16: Offline fallback toast when client loses connection to host
+  useEffect(() => {
+    let wasConnected = true
+    window.electronAPI.network.onConnectionStatus(({ connected }) => {
+      if (!connected && wasConnected) {
+        addToast('Host unreachable — running with local data only', 'info')
+      }
+      wasConnected = connected
+    })
+    return () => window.electronAPI.network.removeAllListeners()
   }, [addToast])
 
   return (

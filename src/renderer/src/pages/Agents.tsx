@@ -2,7 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import Modal from '../components/Modal'
 import ActivityFeed from '../components/ActivityFeed'
 import type { Agent, AgentFile, AgentMemory, SkillSummary, ActivityLogEntry, Task, McpServer, McpTool } from '../env.d'
-import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
+import { AGENT_AVATARS, getAgentColor, getAgentTitle } from '../assets/agents'
+import TabBar from '../components/TabBar'
+import DirectiveRenderer from '../components/DirectiveRenderer'
+import { useUIStore } from '../store/ui'
 
 const api = window.electronAPI
 
@@ -17,12 +20,8 @@ function getAccent(agentId: string): string {
 const LEAD_IDS = new Set(['agent-lyra'])
 
 // Phase-locked agents — seeded in DB, shown dimmed in org chart until their phase lands
-const PHASE_LOCKED: Record<string, string> = {
-  'agent-nexus':    'Phase 11',
-  'agent-helm':     'Phase 11',
-  'agent-atlas':    'Phase 12',
-  'agent-ledger':   'Phase 4+',
-}
+// All agents now active: Nexus (Ph 15 ✅), Helm (Ph 12 ✅), Ledger (Ph 11 ✅), Atlas (Ph 17 ✅)
+const PHASE_LOCKED: Record<string, string> = {}
 
 // The 5 standard files every agent should have
 const STANDARD_FILES = ['SOUL.md', 'TOOLS.md', 'MEMORY.md', 'IDENTITY.md', 'HEARTBEAT.md']
@@ -138,6 +137,8 @@ function MarkdownView({ content, accent }: { content: string; accent: string }):
   )
 }
 
+// DirectiveRenderer is now a shared component — imported from ../components/DirectiveRenderer
+
 // ─── Roster Item ─────────────────────────────────────────────────────────────
 interface RosterItemProps {
   agent: Agent
@@ -149,7 +150,7 @@ interface RosterItemProps {
 function RosterItem({ agent, selected, isOnline, onClick }: RosterItemProps): React.JSX.Element {
   const accent = getAccent(agent.id)
   const svgUrl = AGENT_AVATARS[agent.id]
-  const shortRole = agent.operational_role?.split('.')[0]?.split(',')[0]?.trim() ?? 'Agent'
+  const shortRole = getAgentTitle(agent.id) || 'Agent'
 
   return (
     <button
@@ -248,7 +249,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
   const [serverTools, setServerTools] = useState<Record<string, McpTool[]>>({})
   const [savingTools, setSavingTools] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const shortRole = agent.operational_role?.split('.')[0]?.split(',')[0]?.trim() ?? ''
+  const shortRole = getAgentTitle(agent.id)
 
   async function loadFiles(): Promise<void> {
     const result = await api.agentFiles.getAll(agent.id)
@@ -364,7 +365,6 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
       {/* ── Header ── */}
       <div style={{
         padding: '24px 28px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
         flexShrink: 0, position: 'relative', overflow: 'hidden',
       }}>
         {/* Ambient glow */}
@@ -426,18 +426,6 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
               </div>
             )}
 
-            {agent.system_directive && (
-              <p style={{
-                fontSize: 12, color: 'rgba(255,255,255,0.35)',
-                fontStyle: 'italic', lineHeight: 1.5, marginTop: 2,
-                maxWidth: 480, overflow: 'hidden',
-                display: '-webkit-box',
-              } as React.CSSProperties}>
-                "{agent.system_directive.length > 110
-                  ? agent.system_directive.substring(0, 110) + '…'
-                  : agent.system_directive}"
-              </p>
-            )}
           </div>
 
           <button
@@ -465,119 +453,120 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
           </button>
         </div>
 
-        {/* Sub-tab bar */}
-        <div style={{ display: 'flex', gap: 2 }}>
-          {(['profile', 'files', 'activity', 'memory', 'tools'] as ProfileTab[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => {
-                setProfileTab(tab); setEditingFile(null)
-                if (tab === 'memory') loadMemories().catch(() => {})
-                if (tab === 'tools') loadTools().catch(() => {})
-              }}
-              style={{
-                padding: '7px 14px', fontSize: 12,
-                fontWeight: profileTab === tab ? 600 : 400,
-                color: profileTab === tab ? '#f1f5f9' : 'rgba(255,255,255,0.36)',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: `2px solid ${profileTab === tab ? accent : 'transparent'}`,
-                marginBottom: -1,
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-            >
-              {tab === 'files'
-                ? `Files ${initializedCount}/${STANDARD_FILES.length}`
-                : tab === 'memory'
-                  ? `Memory${memoryCount > 0 ? ` ${memoryCount}` : ''}`
-                  : tab === 'tools'
-                    ? `Tools${agentServerIds.length > 0 ? ` ${agentServerIds.length}` : ''}`
-                    : tab.charAt(0).toUpperCase() + tab.slice(1)
-              }
-            </button>
-          ))}
-        </div>
+        <TabBar
+          tabs={[
+            { id: 'profile',  label: 'Profile' },
+            { id: 'files',    label: `Files ${initializedCount}/${STANDARD_FILES.length}` },
+            { id: 'activity', label: 'Activity' },
+            { id: 'memory',   label: 'Memory', count: memoryCount > 0 ? memoryCount : undefined },
+            { id: 'tools',    label: 'Tools',  count: agentServerIds.length > 0 ? agentServerIds.length : undefined },
+          ]}
+          active={profileTab}
+          onChange={(id) => {
+            setProfileTab(id as ProfileTab); setEditingFile(null)
+            if (id === 'memory') loadMemories().catch(() => {})
+            if (id === 'tools') loadTools().catch(() => {})
+          }}
+        />
       </div>
 
       {/* ── Tab body ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
         {/* Profile tab */}
         {profileTab === 'profile' && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
-              {agent.system_directive && (
-                <div>
-                  <SectionLabel icon="fa-solid fa-crosshairs">Mission Directives</SectionLabel>
-                  <div style={{
-                    padding: '13px 14px', borderRadius: 11,
-                    background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderLeft: `3px solid ${accent}50`,
-                    fontSize: 12.5, color: 'rgba(255,255,255,0.68)', lineHeight: 1.65,
-                  }}>
-                    {agent.system_directive}
-                  </div>
-                </div>
-              )}
-              {agent.operational_role && (
-                <div>
-                  <SectionLabel icon="fa-solid fa-id-badge">Operational Bio</SectionLabel>
-                  <div style={{
-                    padding: '13px 14px', borderRadius: 11,
-                    background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    fontSize: 12.5, color: 'rgba(255,255,255,0.55)', lineHeight: 1.65,
-                  }}>
-                    {agent.operational_role}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {activeTasks.length > 0 && (
-              <div>
-                <SectionLabel icon="fa-solid fa-bolt">Active Tasks · {activeTasks.length}</SectionLabel>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {activeTasks.map(task => (
-                    <div key={task.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 14px', borderRadius: 10,
-                      background: 'rgba(52,211,153,0.04)',
-                      border: '1px solid rgba(52,211,153,0.12)',
-                    }}>
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: '#34d399', boxShadow: '0 0 5px #34d399', flexShrink: 0,
-                      }} />
-                      <span style={{
-                        fontSize: 12.5, color: 'rgba(255,255,255,0.75)',
-                        flex: 1, minWidth: 0,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 28px 20px' }}>
+            {(agent.system_directive || agent.operational_role) ? (
+              <>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: agent.system_directive && agent.operational_role ? '1fr 1fr' : '1fr',
+                  gap: 14, flex: 1, minHeight: 0,
+                }}>
+                  {agent.system_directive && (
+                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <SectionLabel icon="fa-solid fa-crosshairs">Mission Directives</SectionLabel>
+                      <div style={{
+                        flex: 1, overflowY: 'auto',
+                        padding: '14px 16px', borderRadius: 11,
+                        background: 'rgba(255,255,255,0.025)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        borderLeft: `3px solid ${accent}50`,
                       }}>
-                        {task.title}
-                      </span>
-                      <span style={{ fontSize: 11, color: '#34d399', fontWeight: 600, flexShrink: 0 }}>
-                        {task.progress}%
-                      </span>
+                        <DirectiveRenderer text={agent.system_directive} accent={accent} />
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  {agent.operational_role && (
+                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <SectionLabel icon="fa-solid fa-id-badge">Operational Bio</SectionLabel>
+                      <div style={{
+                        flex: 1, overflowY: 'auto',
+                        padding: '14px 16px', borderRadius: 11,
+                        background: 'rgba(255,255,255,0.025)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        fontSize: 12.5, color: 'rgba(255,255,255,0.60)', lineHeight: 1.70,
+                        whiteSpace: 'pre-wrap',
+                      }}>
+                        {agent.operational_role}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {!agent.system_directive && !agent.operational_role && activeTasks.length === 0 && (
-              <div style={{ textAlign: 'center', paddingTop: 48, color: 'rgba(255,255,255,0.22)' }}>
-                <i className="fa-solid fa-robot" style={{ fontSize: 28, marginBottom: 10, display: 'block' }} />
-                <p style={{ fontSize: 13 }}>No configuration yet</p>
-                <p style={{ fontSize: 11, marginTop: 4, color: 'rgba(255,255,255,0.15)' }}>Click Edit to add directives</p>
+                {activeTasks.length > 0 && (
+                  <div style={{ flexShrink: 0, paddingTop: 14, paddingBottom: 20 }}>
+                    <SectionLabel icon="fa-solid fa-bolt">Active Tasks · {activeTasks.length}</SectionLabel>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {activeTasks.map(task => (
+                        <div key={task.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 14px', borderRadius: 10,
+                          background: 'rgba(52,211,153,0.04)',
+                          border: '1px solid rgba(52,211,153,0.12)',
+                        }}>
+                          <span style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            background: '#34d399', boxShadow: '0 0 5px #34d399', flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: 12.5, color: 'rgba(255,255,255,0.75)',
+                            flex: 1, minWidth: 0,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {task.title}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#34d399', fontWeight: 600, flexShrink: 0 }}>
+                            {task.progress}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <i className="fa-solid fa-robot" style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)' }} />
+                </div>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>No configuration yet</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Click Edit to add directives</p>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Files tab */}
         {profileTab === 'files' && (
-          <div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
             {/* Toolbar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <SectionLabel icon="fa-solid fa-file-code">Agent Definition Files</SectionLabel>
@@ -756,7 +745,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
         {/* Activity tab */}
         {profileTab === 'activity' && (
-          <div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
             <SectionLabel icon="fa-solid fa-clock-rotate-left">Recent Activity</SectionLabel>
             {log.length > 0 ? (
               <div style={{
@@ -767,7 +756,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                 <ActivityFeed entries={log} maxHeight="360px" />
               </div>
             ) : (
-              <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.22)' }}>
+              <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.40)' }}>
                 <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: 22, marginBottom: 8, display: 'block' }} />
                 <p style={{ fontSize: 13 }}>No activity yet</p>
               </div>
@@ -777,7 +766,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
         {/* Memory tab */}
         {profileTab === 'memory' && (
-          <div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
             {/* Toolbar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 }}>
               <SectionLabel icon="fa-solid fa-brain">Agent Memory</SectionLabel>
@@ -847,10 +836,10 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
             {/* Memory list */}
             {memories.length === 0 ? (
-              <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.22)' }}>
+              <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.40)' }}>
                 <i className="fa-solid fa-brain" style={{ fontSize: 22, marginBottom: 8, display: 'block' }} />
                 <p style={{ fontSize: 13 }}>No memories yet</p>
-                <p style={{ fontSize: 12, opacity: 0.6, marginTop: 4 }}>Memories are extracted automatically after each task run</p>
+                <p style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>Memories are extracted automatically after each task run</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -906,7 +895,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
         {/* Tools tab */}
         {profileTab === 'tools' && (
-          <div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <SectionLabel icon="fa-solid fa-plug-circle-bolt">MCP Tool Servers</SectionLabel>
               {savingTools && (
@@ -922,9 +911,9 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                 background: 'rgba(255,255,255,0.025)', borderRadius: 12,
                 border: '1px solid rgba(255,255,255,0.06)',
               }}>
-                <i className="fa-solid fa-plug" style={{ fontSize: 24, color: 'rgba(255,255,255,0.18)', marginBottom: 10, display: 'block' }} />
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.36)', marginBottom: 6 }}>No MCP servers configured</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)' }}>
+                <i className="fa-solid fa-plug" style={{ fontSize: 24, color: 'rgba(255,255,255,0.35)', marginBottom: 10, display: 'block' }} />
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>No MCP servers configured</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)' }}>
                   Add servers in Settings → Tools to give this agent new capabilities.
                 </div>
               </div>
@@ -1056,7 +1045,7 @@ function PersonnelTab({ agents, selectedAgent, agentTasks, onSelectAgent, onEdit
             />
           ))}
           {agents.length === 0 && (
-            <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.22)' }}>
+            <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.40)' }}>
               <i className="fa-solid fa-robot" style={{ fontSize: 22, marginBottom: 8, display: 'block' }} />
               <p style={{ fontSize: 12 }}>No agents yet</p>
             </div>
@@ -1164,6 +1153,71 @@ function OrgCard({ name, role, accent, svgUrl, avatar, faIcon, size = 'normal', 
   )
 }
 
+// ─── Claude Code Sync Card ────────────────────────────────────────────────────
+function ClaudeCodeSyncCard({ agents }: { agents: Agent[] }): React.JSX.Element {
+  const [syncing, setSyncing] = useState(false)
+  const [result,  setResult]  = useState<{ ok: boolean; count?: number; error?: string } | null>(null)
+
+  async function handleSync(): Promise<void> {
+    setSyncing(true)
+    setResult(null)
+    try {
+      const r = await api.claudeCode.syncAllAgents()
+      setResult(r)
+    } catch {
+      setResult({ ok: false, error: 'Sync failed — check that the CLI is installed' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '14px 16px', borderRadius: 14,
+      background: 'rgba(129,140,248,0.04)',
+      border: '1px solid rgba(129,140,248,0.16)',
+    }}>
+      <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: '0 0 12px' }}>
+        Compiles each agent's SOUL.md, IDENTITY.md, and TOOLS.md into a CLAUDE.md project file under{' '}
+        <code style={{ fontFamily: 'monospace', color: '#818cf8', fontSize: 11 }}>~/.conductr/agents/&lt;id&gt;/</code>{' '}
+        for use with the <code style={{ fontFamily: 'monospace', color: '#818cf8', fontSize: 11 }}>claude</code> CLI.
+      </p>
+
+      {result && (
+        <div style={{
+          padding: '7px 10px', borderRadius: 8, marginBottom: 10, fontSize: 12,
+          background: result.ok ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
+          border: `1px solid ${result.ok ? 'rgba(52,211,153,0.28)' : 'rgba(248,113,113,0.28)'}`,
+          color: result.ok ? '#34d399' : '#f87171',
+        }}>
+          {result.ok
+            ? <><i className="fa-solid fa-circle-check" style={{ marginRight: 6 }} />{result.count ?? agents.length} agents synced to ~/.conductr/agents/</>
+            : <><i className="fa-solid fa-circle-xmark" style={{ marginRight: 6 }} />{result.error}</>
+          }
+        </div>
+      )}
+
+      <button
+        onClick={handleSync}
+        disabled={syncing}
+        style={{
+          width: '100%', padding: '9px 0',
+          background: syncing ? 'rgba(129,140,248,0.08)' : 'rgba(129,140,248,0.16)',
+          border: '1px solid rgba(129,140,248,0.32)',
+          borderRadius: 9, cursor: syncing ? 'not-allowed' : 'pointer',
+          color: '#818cf8', fontSize: 13, fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+        }}
+      >
+        {syncing
+          ? <><i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 11 }} /> Syncing {agents.length} agents…</>
+          : <><i className="fa-solid fa-arrows-rotate" style={{ fontSize: 11 }} /> Sync All Agents to Claude Code</>
+        }
+      </button>
+    </div>
+  )
+}
+
 // ─── Protocol Tab ─────────────────────────────────────────────────────────────
 interface ProtocolTabProps {
   agents: Agent[]
@@ -1171,6 +1225,7 @@ interface ProtocolTabProps {
 }
 
 function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Element {
+  const mode = useUIStore((s) => s.mode)
   const leadAgent = agents.find(a => LEAD_IDS.has(a.id)) ?? agents[0] ?? null
   const subAgents     = agents.filter(a => a !== leadAgent)
   const coreAgents    = subAgents.filter(a => !PHASE_LOCKED[a.id])
@@ -1203,7 +1258,7 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
             {leadAgent && (
               <OrgCard
                 name={leadAgent.name}
-                role={leadAgent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Lead Agent'}
+                role={getAgentTitle(leadAgent.id) || 'Lead Agent'}
                 accent={getAccent(leadAgent.id)}
                 svgUrl={AGENT_AVATARS[leadAgent.id]}
                 size="large"
@@ -1222,7 +1277,7 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
                     <OrgCard
                       key={agent.id}
                       name={agent.name}
-                      role={(agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent').substring(0, 22)}
+                      role={getAgentTitle(agent.id) || 'Agent'}
                       accent={getAccent(agent.id)}
                       svgUrl={AGENT_AVATARS[agent.id]}
                       avatar={agent.avatar}
@@ -1245,7 +1300,7 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
                         <OrgCard
                           key={agent.id}
                           name={agent.name}
-                          role={(agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent').substring(0, 22)}
+                          role={getAgentTitle(agent.id) || 'Agent'}
                           accent={getAccent(agent.id)}
                           svgUrl={AGENT_AVATARS[agent.id]}
                           avatar={agent.avatar}
@@ -1320,13 +1375,21 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
                       /agent {agent.name.toLowerCase()}
                     </code>
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>
-                      {i === 0 ? '← default' : (agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? '').substring(0, 26)}
+                      {i === 0 ? '← default' : getAgentTitle(agent.id)}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+
+          {/* Claude Code Mode: Agent Sync */}
+          {mode === 'claude-code' && (
+            <div>
+              <SectionLabel icon="fa-solid fa-terminal">Claude Code Sync</SectionLabel>
+              <ClaudeCodeSyncCard agents={agents} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -1455,7 +1518,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
             const accent = getAccent(agent.id)
             const svgUrl = AGENT_AVATARS[agent.id]
             const isSelected = selectedChannel?.id === agent.id
-            const shortRole = (agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent').substring(0, 22)
+            const shortRole = getAgentTitle(agent.id) || 'Agent'
 
             return (
               <button
@@ -1558,7 +1621,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
             <div style={{
               flex: 1, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
-              gap: 12, color: 'rgba(255,255,255,0.22)',
+              gap: 12, color: 'rgba(255,255,255,0.40)',
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 16,
@@ -1572,10 +1635,10 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
                 <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.42)' }}>
                   Direct channel with {selectedChannel.name}
                 </p>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.22)', marginTop: 5 }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 5 }}>
                   Chat wiring coming in Phase 3B
                 </p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.16)', marginTop: 5 }}>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 5 }}>
                   Use the Chat page to talk to {selectedChannel.name} now
                 </p>
               </div>
@@ -1585,11 +1648,11 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            gap: 10, color: 'rgba(255,255,255,0.20)',
+            gap: 10, color: 'rgba(255,255,255,0.38)',
           }}>
             <i className="fa-solid fa-comments" style={{ fontSize: 32 }} />
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.28)' }}>Select a channel</p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>Choose from the Intelligence Channels panel</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Select a channel</p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Choose from the Intelligence Channels panel</p>
           </div>
         )}
       </div>
@@ -1778,35 +1841,20 @@ export default function Agents(): React.JSX.Element {
       {/* Glass card — tab bar + content */}
       <div style={{
         flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
-        background: 'rgba(6, 8, 22, 0.74)',
-        backdropFilter: 'blur(48px) saturate(1.1)',
-        WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
+        background: 'var(--card-bg, rgba(255,255,255,0.04))',
+        backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
+        WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
         border: '1px solid rgba(255,255,255,0.07)',
         borderTopColor: 'rgba(255,255,255,0.11)',
         borderRadius: 16,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.60)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
         overflow: 'hidden',
       }}>
-        {/* Tab bar */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 8px', flexShrink: 0 }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '12px 16px', fontSize: 13,
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                color: activeTab === tab.id ? '#f1f5f9' : 'rgba(255,255,255,0.38)',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: `2px solid ${activeTab === tab.id ? '#818cf8' : 'transparent'}`,
-                marginBottom: -1, lineHeight: 1,
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <TabBar
+          tabs={TABS}
+          active={activeTab}
+          onChange={(id) => setActiveTab(id as SwarmTab)}
+        />
 
         {/* Tab content */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>

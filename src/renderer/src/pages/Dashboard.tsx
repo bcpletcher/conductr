@@ -80,9 +80,9 @@ function EmptyState({ icon, label }: { icon: string; label: string }): React.JSX
       <div className="w-9 h-9 rounded-xl flex items-center justify-center"
         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <i className={`${icon} text-xs`} style={{ color: 'rgba(255,255,255,0.14)' }} />
+        <i className={`${icon} text-xs`} style={{ color: 'rgba(255,255,255,0.32)' }} />
       </div>
-      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.18)' }}>{label}</span>
+      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
     </div>
   )
 }

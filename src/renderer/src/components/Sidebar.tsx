@@ -21,6 +21,8 @@ const NAV_ITEMS: NavItemDef[] = [
   { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
   { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
   { id: 'blueprint',    label: 'Storyboard',   icon: 'fa-solid fa-film' },
+  { id: 'channels',     label: 'Channels',     icon: 'fa-solid fa-tower-broadcast' },
+  { id: 'pipelines',    label: 'Pipelines',    icon: 'fa-solid fa-diagram-project' },
   { id: 'devtools',     label: 'Dev Tools',    icon: 'fa-solid fa-code' },
 ]
 
@@ -30,12 +32,24 @@ const SYSTEM_ITEMS: NavItemDef[] = [
   { id: 'settings',  label: 'Settings',    icon: 'fa-solid fa-gear' },
 ]
 
+// Pages hidden in Claude Code mode — these rely on direct API key billing
+const CC_HIDDEN_NAV: NavPage[]    = ['devtools', 'metrics']
+const CC_HIDDEN_SYSTEM: NavPage[] = ['metrics', 'providers']
+
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {
   const notifications  = useUIStore((s) => s.notifications)
   const openNotifPanel = useUIStore((s) => s.openNotifPanel)
   const openSearch     = useUIStore((s) => s.openSearch)
   const accentColor    = useUIStore((s) => s.accentColor)
+  const mode           = useUIStore((s) => s.mode)
   const unreadCount    = notifications.filter((n) => !n.read).length
+
+  const visibleNavItems    = mode === 'claude-code'
+    ? NAV_ITEMS.filter((i) => !CC_HIDDEN_NAV.includes(i.id))
+    : NAV_ITEMS
+  const visibleSystemItems = mode === 'claude-code'
+    ? SYSTEM_ITEMS.filter((i) => !CC_HIDDEN_SYSTEM.includes(i.id))
+    : SYSTEM_ITEMS
   const navRef         = useRef<HTMLElement>(null)
 
   /**
@@ -224,7 +238,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
           <span className="nav-section-label" style={{ marginTop: 4 }}>Navigation</span>
 
           <div className="space-y-0.5 mt-1">
-            {NAV_ITEMS.map((item) => (
+            {visibleNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
@@ -267,7 +281,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
           />
 
           <div className="space-y-0.5">
-            {SYSTEM_ITEMS.map((item) => (
+            {visibleSystemItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}

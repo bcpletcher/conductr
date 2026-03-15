@@ -270,15 +270,11 @@ function PhaseDetail({ phase, accentColor }: { phase: PhaseData; accentColor: st
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Header card */}
       <div
+        className="card"
         style={{
-          background: 'var(--card-bg, rgba(255,255,255,0.04))',
-          backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2)',
-          WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2)',
-          border: `1px solid rgba(255,255,255,0.08)`,
           borderTop: `3px solid ${color}`,
           borderRadius: 14,
           padding: '20px 22px',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
         }}
       >
         <div className="flex items-start justify-between gap-4">
@@ -363,15 +359,8 @@ function PhaseDetail({ phase, accentColor }: { phase: PhaseData; accentColor: st
       {/* Checklist */}
       {phase.items.length > 0 && (
         <div
-          style={{
-            background: 'var(--card-bg-dark, rgba(255,255,255,0.03))',
-            backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-            WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 14,
-            padding: '16px 20px',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 12px rgba(0,0,0,0.30)',
-          }}
+          className="card"
+          style={{ borderRadius: 14, padding: '16px 20px' }}
         >
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 12 }}>
             Deliverables
@@ -586,7 +575,7 @@ function IdeasPanel({ pinned, accentColor, onNavigateToChat }: IdeasPanelProps):
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.25)' }}>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.45)' }}>
           <i className="fa-solid fa-spinner animate-spin" style={{ fontSize: 20, marginBottom: 10, display: 'block' }} />Loading…
         </div>
       ) : filteredIdeas.length > 0 ? (
@@ -817,7 +806,7 @@ function IdeasKanban({ accentColor, onNavigateToChat }: IdeasKanbanProps): React
 
       {/* Kanban columns */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.25)' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.45)' }}>
           <i className="fa-solid fa-spinner animate-spin" style={{ fontSize: 20, marginBottom: 10, display: 'block' }} />Loading…
         </div>
       ) : (
@@ -830,15 +819,11 @@ function IdeasKanban({ accentColor, onNavigateToChat }: IdeasKanbanProps): React
             return (
               <div
                 key={col.id}
+                className="card"
                 style={{
                   display: 'flex', flexDirection: 'column',
-                  background: 'var(--card-bg-dark, rgba(255,255,255,0.025))',
-                  backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-                  WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-                  border: '1px solid rgba(255,255,255,0.08)',
                   borderTop: `2px solid ${col.color}`,
                   borderRadius: 12,
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
                   overflow: 'hidden',
                 }}
               >
@@ -856,7 +841,7 @@ function IdeasKanban({ accentColor, onNavigateToChat }: IdeasKanbanProps): React
                 {/* Cards */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {shown.length === 0 && (
-                    <div style={{ textAlign: 'center', paddingTop: 28, color: 'rgba(255,255,255,0.18)', fontSize: 11 }}>
+                    <div style={{ textAlign: 'center', paddingTop: 28, color: 'rgba(255,255,255,0.40)', fontSize: 12 }}>
                       <i className={col.icon} style={{ fontSize: 16, display: 'block', marginBottom: 6 }} />
                       Empty
                     </div>
@@ -891,8 +876,6 @@ function IdeasKanban({ accentColor, onNavigateToChat }: IdeasKanbanProps): React
 
 // ─── Storyboard page ──────────────────────────────────────────────────────────
 
-type StoryTab = 'roadmap' | 'ideas'
-
 export default function Storyboard(): React.JSX.Element {
   const accentColor = useUIStore((s) => s.accentColor)
   const setPage     = useUIStore((s) => s.setPage)
@@ -900,7 +883,6 @@ export default function Storyboard(): React.JSX.Element {
   const { phases, pinned } = useMemo(() => parseRoadmap(rawMd), [])
 
   const firstActivePhase = phases.find((p) => p.status === 'active')
-  const [storyTab, setStoryTab] = useState<StoryTab>('roadmap')
   const [selected, setSelected] = useState<RailItem>(
     firstActivePhase ? { type: 'phase', num: firstActivePhase.num } : { type: 'ideas' }
   )
@@ -925,7 +907,7 @@ export default function Storyboard(): React.JSX.Element {
     <div data-testid="blueprint-page" style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: 0 }}>
       {/* Page header */}
       <div style={{ paddingTop: 8, paddingBottom: 14, flexShrink: 0 }}>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 750, color: '#eef0f8', letterSpacing: '-0.035em', lineHeight: 1.1, margin: 0 }}>
               Storyboard
@@ -957,109 +939,118 @@ export default function Storyboard(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
-          {([
-            { id: 'roadmap' as StoryTab, label: 'Roadmap', icon: 'fa-solid fa-route' },
-            { id: 'ideas'   as StoryTab, label: 'Ideas',   icon: 'fa-solid fa-lightbulb', badge: pendingCount },
-          ]).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setStoryTab(t.id)
-                if (t.id === 'ideas') api.ideas.getPendingCount().then(setPendingCount)
-              }}
-              style={{
-                padding: '7px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: storyTab === t.id ? 600 : 400,
-                background: storyTab === t.id ? 'rgba(255,255,255,0.07)' : 'transparent',
-                color: storyTab === t.id ? '#eef0f8' : 'rgba(255,255,255,0.45)',
-                transition: 'all 0.15s',
-                boxShadow: storyTab === t.id ? 'inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
-                display: 'flex', alignItems: 'center', gap: 7,
-              }}
-            >
-              <i className={t.icon} style={{ fontSize: 11 }} />
-              {t.label}
-              {t.badge != null && t.badge > 0 && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 99, padding: '0 5px', lineHeight: '15px', minWidth: 17, textAlign: 'center' }}>
-                  {t.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* ── Roadmap tab ── */}
-      {storyTab === 'roadmap' && (
-        <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {/* Left rail */}
-          <div
-            style={{
-              width: 230, flexShrink: 0,
-              background: 'var(--card-bg-dark, rgba(255,255,255,0.025))',
-              backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-              WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-              borderRadius: 14,
-              display: 'flex', flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <div style={{ overflowY: 'auto', flex: 1, padding: '6px 8px' }}>
-              {/* In Progress */}
-              {phases.filter(p => p.status === 'active').length > 0 && (
-                <>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: accentColor, padding: '4px 4px 3px', opacity: 0.7 }}>
-                    In Progress
-                  </div>
-                  {phases.filter(p => p.status === 'active').map((phase) => (
-                    <RailPhaseBtn key={phase.num} phase={phase} selected={selected} accentColor={accentColor} onSelect={setSelected} />
-                  ))}
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '6px 2px' }} />
-                </>
-              )}
+      {/* ── Rail + Content (unified layout) ── */}
+      <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {/* Left rail */}
+        <div
+          className="card"
+          style={{
+            width: 230, flexShrink: 0,
+            borderRadius: 14,
+            display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ overflowY: 'auto', flex: 1, padding: '6px 8px' }}>
+            {/* Roadmap section label */}
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', padding: '6px 4px 4px' }}>
+              Roadmap
+            </div>
 
-              {/* Planned */}
-              {phases.filter(p => p.status === 'planned').length > 0 && (
-                <>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', padding: '4px 4px 3px' }}>
-                    Planned
-                  </div>
-                  {phases.filter(p => p.status === 'planned').map((phase) => (
-                    <RailPhaseBtn key={phase.num} phase={phase} selected={selected} accentColor={accentColor} onSelect={setSelected} />
-                  ))}
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '6px 2px' }} />
-                </>
-              )}
+            {/* In Progress */}
+            {phases.filter(p => p.status === 'active').length > 0 && (
+              <>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: accentColor, padding: '4px 4px 3px', opacity: 0.7 }}>
+                  In Progress
+                </div>
+                {phases.filter(p => p.status === 'active').map((phase) => (
+                  <RailPhaseBtn key={phase.num} phase={phase} selected={selected} accentColor={accentColor} onSelect={setSelected} />
+                ))}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '6px 2px' }} />
+              </>
+            )}
 
-              {/* Completed — collapsed by default */}
-              <CompletedGroup phases={phases.filter(p => p.status === 'complete')} selected={selected} accentColor={accentColor} onSelect={setSelected} />
+            {/* Planned */}
+            {phases.filter(p => p.status === 'planned').length > 0 && (
+              <>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', padding: '4px 4px 3px' }}>
+                  Planned
+                </div>
+                {phases.filter(p => p.status === 'planned').map((phase) => (
+                  <RailPhaseBtn key={phase.num} phase={phase} selected={selected} accentColor={accentColor} onSelect={setSelected} />
+                ))}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '6px 2px' }} />
+              </>
+            )}
+
+            {/* Completed — collapsed by default */}
+            <CompletedGroup phases={phases.filter(p => p.status === 'complete')} selected={selected} accentColor={accentColor} onSelect={setSelected} />
+
+            {/* Ideas nav entry */}
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button
+                onClick={() => { setSelected({ type: 'ideas' }); api.ideas.getPendingCount().then(setPendingCount) }}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '7px 10px',
+                  borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: selected.type === 'ideas' ? `${accentColor}14` : 'transparent',
+                  boxShadow: selected.type === 'ideas' ? `inset 0 0 0 1px ${accentColor}30` : 'none',
+                  marginBottom: 1, transition: 'background 0.12s',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+                onMouseEnter={(e) => { if (selected.type !== 'ideas') e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={(e) => { if (selected.type !== 'ideas') e.currentTarget.style.background = 'transparent' }}
+              >
+                <i
+                  className="fa-solid fa-lightbulb"
+                  style={{ fontSize: 11, color: selected.type === 'ideas' ? accentColor : '#fbbf24', opacity: 0.85, flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 1 }}>
+                    Ideas
+                  </div>
+                  <div style={{ fontSize: 11.5, fontWeight: selected.type === 'ideas' ? 600 : 400, color: selected.type === 'ideas' ? '#eef0f8' : 'rgba(255,255,255,0.54)', lineHeight: 1.2 }}>
+                    Proposals
+                  </div>
+                </div>
+                {pendingCount > 0 && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.12)', padding: '1px 6px', borderRadius: 99, flexShrink: 0 }}>
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Right panel */}
-          <div style={{ flex: 1, overflowY: 'auto', paddingRight: 2, paddingBottom: 32 }}>
-            {selectedPhase ? (
+        {/* Right panel */}
+        <div className="card flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
+          {selected.type === 'phase' && selectedPhase ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 32px' }}>
               <PhaseDetail phase={selectedPhase} accentColor={accentColor} />
-            ) : (
-              <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.22)' }}>
-                <i className="fa-solid fa-route" style={{ fontSize: 32, marginBottom: 14, display: 'block' }} />
-                <div style={{ fontSize: 14 }}>Select a phase to view details</div>
+            </div>
+          ) : selected.type === 'ideas' ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 32px' }}>
+              <IdeasKanban pinned={pinned} accentColor={accentColor} onNavigateToChat={() => setPage('chat')} />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3" style={{ flex: 1 }}>
+              <div
+                style={{
+                  width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                  background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <i className="fa-solid fa-route" style={{ fontSize: 20, color: 'rgba(255,255,255,0.35)' }} />
               </div>
-            )}
-          </div>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Select a phase to view details</span>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* ── Ideas tab (Kanban) ── */}
-      {storyTab === 'ideas' && (
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <IdeasKanban pinned={pinned} accentColor={accentColor} onNavigateToChat={() => setPage('chat')} />
-        </div>
-      )}
+      </div>
     </div>
   )
 }

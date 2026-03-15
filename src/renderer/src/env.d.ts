@@ -3,6 +3,94 @@
 // Mission Control design token types
 export type TaskStatus = 'queued' | 'active' | 'complete' | 'failed'
 
+// Phase 18: Conductor Mode
+export type ConductorMode = 'claude-code' | 'api-key'
+
+export interface ClaudeCodeCliStatus {
+  installed: boolean
+  path: string | null
+}
+
+// Pipeline types (Phase 17)
+export interface PipelineStepDef {
+  id: string
+  name: string
+  agent_id: string
+  description: string
+  execution_mode: 'sequential' | 'parallel'
+  depends_on: string[]
+  inject_prior_outputs: boolean
+}
+
+export interface Pipeline {
+  id: string
+  name: string
+  description: string | null
+  steps: string           // JSON: PipelineStepDef[]
+  is_template: number     // 0 | 1
+  created_at: string
+  updated_at: string
+}
+
+export interface PipelineRun {
+  id: string
+  pipeline_id: string
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'cancelled'
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  pipeline_name?: string
+}
+
+export interface PipelineStepRun {
+  id: string
+  run_id: string
+  step_id: string
+  agent_id: string | null
+  task_id: string | null
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
+  output: string | null
+  started_at: string | null
+  completed_at: string | null
+}
+
+// Network / Server Mode types (Phase 16)
+export type NetworkMode = 'standalone' | 'host' | 'client'
+
+export interface NetworkStatus {
+  mode: NetworkMode
+  lanIp: string | null
+  tailscaleIp: string | null
+  pairingCode: string | null
+  connectedClients: number
+  hostServerRunning: boolean
+}
+
+export interface PeerInfo {
+  name: string
+  ip: string
+  isConductrHost: boolean
+}
+
+// OpenClaw types (Phase 15)
+export interface OpenClawStatus {
+  installed: boolean
+  running: boolean
+  version?: string
+  pid?: number
+  error?: string
+}
+
+export interface OpenClawChannel {
+  id: string
+  name: string
+  type: string
+  config: Record<string, string>
+  routing_agent_id: string
+  enabled: boolean
+  created_at: string
+}
+
 // MCP types (Phase 14)
 export type McpConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error'
 
@@ -554,6 +642,50 @@ declare global {
         getPRs: (remoteUrl: string) => Promise<GithubPR[] | { error: string }>
         getRepoInfo: (remoteUrl: string) => Promise<{ name: string; fullName: string; description: string | null; defaultBranch: string; isPrivate: boolean; stars: number; url: string } | null>
       }
+      pipelines: {
+        getAll: (templatesOnly?: boolean) => Promise<Pipeline[]>
+        getById: (id: string) => Promise<Pipeline | null>
+        create: (input: { name: string; description?: string; steps?: PipelineStepDef[]; is_template?: boolean }) => Promise<Pipeline>
+        update: (id: string, updates: { name?: string; description?: string; steps?: PipelineStepDef[] }) => Promise<Pipeline>
+        delete: (id: string) => Promise<{ ok: boolean }>
+        start: (pipelineId: string) => Promise<{ ok: boolean; runId?: string; error?: string }>
+        getRecentRuns: (limit?: number) => Promise<PipelineRun[]>
+        getRuns: (pipelineId: string, limit?: number) => Promise<PipelineRun[]>
+        getRunDetail: (runId: string) => Promise<{ run: PipelineRun; stepRuns: PipelineStepRun[] } | null>
+        decompose: (goal: string) => Promise<{ ok: boolean; steps?: PipelineStepDef[]; error?: string }>
+        startSwarm: (goal: string) => Promise<{ ok: boolean; runId?: string; pipelineId?: string; error?: string }>
+        onRunUpdate: (cb: (data: { runId: string; pipelineId: string; status: PipelineRun['status']; stepRuns: PipelineStepRun[] }) => void) => void
+        removeAllListeners: () => void
+      }
+      network: {
+        getStatus: () => Promise<NetworkStatus>
+        enableHostMode: () => Promise<{ ok: boolean; pairingCode: string }>
+        disableHostMode: () => Promise<{ ok: boolean }>
+        regeneratePairingCode: () => Promise<{ pairingCode: string }>
+        connectToHost: (ip: string, code: string) => Promise<{ ok: boolean; error?: string }>
+        disconnectFromHost: () => Promise<{ ok: boolean }>
+        getTailscalePeers: () => Promise<PeerInfo[]>
+        installTailscale: () => Promise<{ ok: boolean }>
+        isClientActive: () => Promise<boolean>
+        onStatusChange: (cb: (s: NetworkStatus) => void) => void
+        onConnected: (cb: (data: { hostIp: string }) => void) => void
+        onConnectionStatus: (cb: (data: { connected: boolean }) => void) => void
+        removeAllListeners: () => void
+      }
+      openclaw: {
+        getStatus: () => Promise<OpenClawStatus>
+        install: () => Promise<{ ok: boolean }>
+        restart: () => Promise<OpenClawStatus>
+        start: () => Promise<OpenClawStatus>
+        stop: () => Promise<OpenClawStatus>
+        listChannels: () => Promise<OpenClawChannel[]>
+        addChannel: (input: { name: string; type: string; config?: Record<string, string>; routing_agent_id?: string }) => Promise<OpenClawChannel>
+        updateChannel: (id: string, updates: Record<string, unknown>) => Promise<OpenClawChannel>
+        removeChannel: (id: string) => Promise<{ ok: boolean }>
+        testChannel: (id: string) => Promise<{ ok: boolean; error?: string }>
+        onStatusChange: (cb: (status: OpenClawStatus) => void) => void
+        removeStatusListener: () => void
+      }
       mcp: {
         listServers: () => Promise<McpServer[]>
         addServer: (input: {
@@ -595,6 +727,12 @@ declare global {
         onPullProgress: (cb: (data: { model: string; status: string; completed?: number; total?: number; error?: string }) => void) => void
         removePullProgressListener: () => void
       }
+      claudeCode: {
+        checkCli:      () => Promise<ClaudeCodeCliStatus>
+        getAgentDir:   (agentId: string) => Promise<{ path: string }>
+        syncAgent:     (agentId: string) => Promise<{ ok: boolean; path?: string; error?: string }>
+        syncAllAgents: () => Promise<{ ok: boolean; count?: number; error?: string }>
+      }
       app: {
         /** Current OS platform string, e.g. 'darwin' | 'win32' | 'linux' */
         platform: string
@@ -605,6 +743,8 @@ declare global {
         /** Fired when the user picks a page from the system tray / menu-bar menu */
         onTrayNavigate: (cb: (page: string) => void) => void
         removeTrayNavigateListener: () => void
+        /** Relaunch the app — called after conductor mode change */
+        relaunch: () => Promise<void>
       }
       /** Custom window controls — used by renderer on Windows (frame is hidden) */
       window: {

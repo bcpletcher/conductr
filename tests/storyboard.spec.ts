@@ -12,17 +12,18 @@ test.describe('Storyboard page', () => {
     ).toBeVisible()
   })
 
-  test('shows Roadmap and Ideas tabs', async ({ page }) => {
+  test('shows Roadmap and Ideas in left rail', async ({ page }) => {
     const page_ = page.locator('[data-testid="blueprint-page"]')
-    await expect(page_.getByText('Roadmap')).toBeVisible()
-    await expect(page_.getByText('Ideas')).toBeVisible()
+    // Left rail has "Roadmap" section label and "Ideas" nav entry
+    await expect(page_.getByText('Roadmap').first()).toBeVisible()
+    await expect(page_.getByText('Ideas').first()).toBeVisible()
   })
 
-  test('Roadmap tab is active by default', async ({ page }) => {
-    // The phase list (left rail) should be visible
+  test('shows phase navigation in left rail by default', async ({ page }) => {
+    // The left rail phase sections should be visible
     await expect(
-      page.locator('[data-testid="blueprint-page"]').getByText('Phases')
-        .or(page.locator('[data-testid="blueprint-page"]').getByText('In Progress'))
+      page.locator('[data-testid="blueprint-page"]').getByText('In Progress')
+        .or(page.locator('[data-testid="blueprint-page"]').getByText('Planned'))
         .first()
     ).toBeVisible()
   })
@@ -35,8 +36,9 @@ test.describe('Storyboard page', () => {
     await expect(container.getByText('Planned').first()).toBeVisible()
   })
 
-  test('clicking Ideas tab switches to kanban view', async ({ page }) => {
-    await page.locator('[data-testid="blueprint-page"]').getByText('Ideas').click()
+  test('clicking Ideas rail entry switches to kanban view', async ({ page }) => {
+    // Click the Ideas rail button (contains "Proposals" sub-label)
+    await page.locator('[data-testid="blueprint-page"]').getByText('Proposals').click()
     // Kanban columns should be visible
     await expect(
       page.locator('[data-testid="blueprint-page"]').getByText('Open')

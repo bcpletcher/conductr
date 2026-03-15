@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ActivityFeed from '../components/ActivityFeed'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
+import TabBar from '../components/TabBar'
 import type { Client, Task, Document, ActivityLogEntry } from '../env.d'
 
 const api = window.electronAPI
@@ -240,32 +241,15 @@ function ClientDetail({ client, onEdit, onDelete }: ClientDetailProps): React.JS
       </div>
 
       {/* Tab bar */}
-      <div
-        className="flex items-center gap-0 flex-shrink-0 px-6"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        {(['tasks', 'docs', 'activity'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className="px-4 py-3 text-xs font-semibold transition-colors border-b-2 -mb-px"
-            style={{
-              borderColor: activeTab === tab ? '#8b7cf8' : 'transparent',
-              color: activeTab === tab ? '#b4abfa' : 'rgba(255,255,255,0.36)',
-            }}
-          >
-            {tab === 'docs' ? 'Documents' : tab === 'activity' ? 'Activity' : 'Tasks'}
-            {tab === 'tasks' && tasks.length > 0 && (
-              <span
-                className="ml-1.5 px-1.5 py-0.5 rounded"
-                style={{ background: 'rgba(139,124,248,0.15)', color: '#b4abfa', fontSize: 9 }}
-              >
-                {tasks.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        tabs={[
+          { id: 'tasks',    label: 'Tasks',     count: tasks.length > 0 ? tasks.length : undefined },
+          { id: 'docs',     label: 'Documents' },
+          { id: 'activity', label: 'Activity' },
+        ]}
+        active={activeTab}
+        onChange={(id) => setActiveTab(id as typeof activeTab)}
+      />
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-6">
@@ -406,17 +390,17 @@ export default function Clients(): React.JSX.Element {
         <div
           className="w-64 flex-shrink-0 flex flex-col overflow-hidden rounded-2xl"
           style={{
-            background: 'rgba(6, 8, 22, 0.74)',
+            background: 'var(--card-bg, rgba(255,255,255,0.04))',
+            backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
+            WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.2) brightness(var(--card-brightness, 1))',
             border: '1px solid rgba(255,255,255,0.07)',
             borderTopColor: 'rgba(255,255,255,0.11)',
-            backdropFilter: 'blur(48px) saturate(1.1)',
-            WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.60)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
           }}
           data-testid="client-list"
         >
           <div className="section-label px-4 pt-4 pb-2 flex-shrink-0">Portfolio</div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1.5" style={{ background: 'rgba(0,0,0,0.10)' }}>
             {clients.map((client) => (
               <ClientCard
                 key={client.id}
@@ -428,8 +412,8 @@ export default function Clients(): React.JSX.Element {
               />
             ))}
             {clients.length === 0 && (
-              <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'rgba(255,255,255,0.28)' }}>
-                <i className="fa-solid fa-users text-xl" style={{ color: 'rgba(255,255,255,0.10)' }} />
+              <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                <i className="fa-solid fa-users text-xl" style={{ color: 'rgba(255,255,255,0.30)' }} />
                 <span className="text-sm">No clients yet</span>
               </div>
             )}
@@ -447,9 +431,14 @@ export default function Clients(): React.JSX.Element {
             />
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <i className="fa-solid fa-users block text-2xl mb-3" style={{ color: 'rgba(255,255,255,0.10)' }} />
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.07)' }}
+                >
+                  <i className="fa-solid fa-users" style={{ fontSize: 16, color: 'rgba(255,255,255,0.32)' }} />
+                </div>
+                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
                   Select a client or create your first one
                 </span>
               </div>

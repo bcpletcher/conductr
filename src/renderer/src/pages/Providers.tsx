@@ -71,6 +71,7 @@ function ProviderCard({
   name,
   meta,
   status,
+  verifiedState,
   onSave,
   onRemove,
   onTest,
@@ -78,6 +79,7 @@ function ProviderCard({
   name: ProviderName
   meta: ProviderMeta
   status: ProviderStatus
+  verifiedState?: 'checking' | 'ok' | 'error'
   onSave: (key: string) => Promise<void>
   onRemove: () => Promise<void>
   onTest: (key: string) => Promise<{ ok: boolean; error?: string; modelCount?: number }>
@@ -127,15 +129,12 @@ function ProviderCard({
 
   return (
     <div
+      className="card"
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        backdropFilter: 'blur(48px) saturate(1.1)',
-        WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
         border: cardBorder,
         borderRadius: 16,
         padding: '20px 22px',
         marginBottom: 12,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
         transition: 'border-color 0.2s',
       }}
     >
@@ -159,17 +158,24 @@ function ProviderCard({
             <span style={{ fontSize: 15, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.02em' }}>
               {meta.label}
             </span>
-            {isConfigured && (
-              <span
-                style={{
-                  padding: '2px 7px', borderRadius: 20,
-                  background: 'rgba(52,211,153,0.12)',
-                  border: '1px solid rgba(52,211,153,0.30)',
-                  fontSize: 10, fontWeight: 700, color: '#34d399',
-                  letterSpacing: '0.05em', textTransform: 'uppercase',
-                }}
-              >
+            {isConfigured && verifiedState === 'checking' && (
+              <span style={{ padding: '2px 7px', borderRadius: 20, background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.28)', fontSize: 10, fontWeight: 700, color: '#fbbf24', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Verifying…
+              </span>
+            )}
+            {isConfigured && verifiedState === 'ok' && (
+              <span style={{ padding: '2px 7px', borderRadius: 20, background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.30)', fontSize: 10, fontWeight: 700, color: '#34d399', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 Connected
+              </span>
+            )}
+            {isConfigured && verifiedState === 'error' && (
+              <span style={{ padding: '2px 7px', borderRadius: 20, background: 'rgba(248,113,113,0.10)', border: '1px solid rgba(248,113,113,0.30)', fontSize: 10, fontWeight: 700, color: '#f87171', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Invalid Key
+              </span>
+            )}
+            {isConfigured && !verifiedState && (
+              <span style={{ padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Configured
               </span>
             )}
           </div>
@@ -412,9 +418,9 @@ function OllamaSection({ meta }: { meta: ProviderMeta }) {
 
   return (
     <div
+      className="card"
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: status?.running ? `1px solid ${meta.color}40` : '1px solid rgba(255,255,255,0.06)',
+        border: status?.running ? `1px solid ${meta.color}40` : undefined,
         borderRadius: 16, padding: '20px 22px', marginBottom: 12,
       }}
     >
@@ -632,6 +638,7 @@ export default function Providers(): React.JSX.Element {
   const [meta, setMeta]       = useState<Record<string, ProviderMeta>>({})
   const [globalDefault, setGlobalDefault] = useState<{ provider: string | null; model: string | null }>({ provider: null, model: null })
   const [models, setModels]   = useState<ModelInfo[]>([])
+  const [verifiedStatus, setVerifiedStatus] = useState<Record<string, 'checking' | 'ok' | 'error'>>({})
 
   useEffect(() => {
     load()
@@ -648,15 +655,27 @@ export default function Providers(): React.JSX.Element {
     setMeta(m)
     setGlobalDefault(gd)
     setModels(mdls)
+    // Verify each configured non-ollama provider in the background
+    const toVerify = PROVIDER_ORDER.filter((p) => p !== 'ollama' && s[p]?.configured)
+    if (toVerify.length > 0) {
+      setVerifiedStatus(Object.fromEntries(toVerify.map((p) => [p, 'checking'])))
+      toVerify.forEach(async (p) => {
+        const result = await window.electronAPI.providers.testConnection(p).catch(() => ({ ok: false })) as { ok: boolean }
+        setVerifiedStatus((prev) => ({ ...prev, [p]: result.ok ? 'ok' : 'error' }))
+      })
+    }
   }
 
   async function handleSaveKey(provider: string, key: string): Promise<void> {
     await window.electronAPI.providers.setKey(provider, key)
+    // Mark as verified immediately — the key was just tested before saving
+    setVerifiedStatus((prev) => ({ ...prev, [provider]: 'ok' }))
     load()
   }
 
   async function handleRemoveKey(provider: string): Promise<void> {
     await window.electronAPI.providers.removeKey(provider)
+    setVerifiedStatus((prev) => { const n = { ...prev }; delete n[provider]; return n })
     load()
   }
 
@@ -671,140 +690,138 @@ export default function Providers(): React.JSX.Element {
   const freeModels = models.filter((m) => m.isFree)
 
   return (
-    <div data-testid="providers-page" style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 40 }}>
+    <div data-testid="providers-page" className="flex flex-col h-full">
       {/* Page header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1
-          style={{
-            fontSize: 26, fontWeight: 800, color: '#eef0f8',
-            letterSpacing: '-0.03em', margin: '0 0 6px',
-          }}
-        >
-          AI Providers
-        </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', margin: 0 }}>
-          Connect your AI providers. All keys stay on your machine and are never sent to Conductr servers.
+      <div className="page-header flex-shrink-0">
+        <h1 className="page-title">AI Providers</h1>
+        <p className="page-subtitle">
+          Connect your AI providers. Keys stay on your machine — never sent to Conductr servers.
         </p>
       </div>
 
-      {/* Summary strip */}
-      <div
-        style={{
-          display: 'flex', gap: 12, marginBottom: 24,
-          padding: '12px 16px', borderRadius: 12,
-          background: 'rgba(129,140,248,0.06)',
-          border: '1px solid rgba(129,140,248,0.16)',
-        }}
-      >
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#818cf8' }}>
-            {PROVIDER_ORDER.filter((p) => p === 'ollama' ? false : status[p]?.configured).length}
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Connected</div>
-        </div>
-        <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#34d399' }}>
-            {freeModels.length}
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Free Models</div>
-        </div>
-        <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#fbbf24' }}>
-            {models.length}
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Total Models</div>
-        </div>
-      </div>
+      {/* 2-column layout */}
+      <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
-      {/* No providers notice */}
-      {configuredCount === 1 && (
-        <div
-          style={{
-            padding: '12px 14px', borderRadius: 10, marginBottom: 20,
-            background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.20)',
-            display: 'flex', gap: 10, alignItems: 'flex-start',
-          }}
-        >
-          <i className="fa-solid fa-triangle-exclamation" style={{ color: '#fbbf24', marginTop: 1, flexShrink: 0 }} />
-          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5 }}>
-            <strong style={{ color: '#fbbf24' }}>No provider connected yet.</strong>{' '}
-            Add OpenRouter for instant access to 100+ models including free ones — recommended for most users.
-          </div>
-        </div>
-      )}
+        {/* ── Left: provider cards (scrollable) ── */}
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingBottom: 32 }}>
 
-      {/* Provider cards */}
-      <div style={{ marginBottom: 28 }}>
-        {PROVIDER_ORDER.map((name) => {
-          if (name === 'ollama') {
-            const m = meta[name]
-            if (!m) return null
-            return <OllamaSection key={name} meta={m} />
-          }
-          const m = meta[name]
-          const s = status[name]
-          if (!m || !s) return null
-          return (
-            <ProviderCard
-              key={name}
-              name={name}
-              meta={m}
-              status={s}
-              onSave={(key) => handleSaveKey(name, key)}
-              onRemove={() => handleRemoveKey(name)}
-              onTest={(key) => handleTest(name, key)}
-            />
-          )
-        })}
-      </div>
-
-      {/* Global default model */}
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 16, padding: '18px 22px',
-        }}
-      >
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.02em', marginBottom: 4 }}>
-          Default Model
-        </div>
-        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.40)', margin: '0 0 14px' }}>
-          Used when no per-agent model is configured. Agents with an assigned model ignore this setting.
-        </p>
-        {globalDefault.provider && globalDefault.model ? (
-          <div
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-              borderRadius: 8, background: 'rgba(129,140,248,0.08)',
-              border: '1px solid rgba(129,140,248,0.20)',
-            }}
-          >
-            <i className="fa-solid fa-circle-check" style={{ color: '#818cf8', fontSize: 12 }} />
-            <span style={{ fontSize: 13, color: '#dde2f0' }}>
-              {globalDefault.provider} / {globalDefault.model}
-            </span>
-            <button
-              onClick={async () => {
-                await window.electronAPI.providers.setGlobalDefault('', '')
-                load()
-              }}
+          {/* No providers notice */}
+          {configuredCount === 1 && (
+            <div
               style={{
-                marginLeft: 'auto', padding: '3px 8px', borderRadius: 5, fontSize: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
-                color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                padding: '12px 14px', borderRadius: 10, marginBottom: 16,
+                background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.20)',
+                display: 'flex', gap: 10, alignItems: 'flex-start',
               }}
             >
-              Clear
-            </button>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#fbbf24', marginTop: 1, flexShrink: 0 }} />
+              <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5 }}>
+                <strong style={{ color: '#fbbf24' }}>No provider connected yet.</strong>{' '}
+                Add OpenRouter for instant access to 100+ models including free ones — recommended for most users.
+              </div>
+            </div>
+          )}
+
+          {/* Provider cards */}
+          {PROVIDER_ORDER.map((name) => {
+            if (name === 'ollama') {
+              const m = meta[name]
+              if (!m) return null
+              return <OllamaSection key={name} meta={m} />
+            }
+            const m = meta[name]
+            const s = status[name]
+            if (!m || !s) return null
+            return (
+              <ProviderCard
+                key={name}
+                name={name}
+                meta={m}
+                status={s}
+                verifiedState={verifiedStatus[name]}
+                onSave={(key) => handleSaveKey(name, key)}
+                onRemove={() => handleRemoveKey(name)}
+                onTest={(key) => handleTest(name, key)}
+              />
+            )
+          })}
+        </div>
+
+        {/* ── Right: summary + default model (fixed width) ── */}
+        <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 32 }}>
+
+          {/* Summary strip */}
+          <div
+            className="card"
+            style={{ borderRadius: 14, padding: '16px 18px' }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 14 }}>
+              Overview
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Connected</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#818cf8' }}>
+                  {PROVIDER_ORDER.filter((p) => p === 'ollama' ? false : status[p]?.configured).length}
+                </span>
+              </div>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Free Models</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#34d399' }}>{freeModels.length}</span>
+              </div>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Total Models</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fbbf24' }}>{models.length}</span>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.30)', fontStyle: 'italic' }}>
-            Auto — uses the first configured provider. Connect a provider to set a specific default.
+
+          {/* Global default model */}
+          <div
+            className="card"
+            style={{ borderRadius: 14, padding: '16px 18px' }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 10 }}>
+              Default Model
+            </div>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', margin: '0 0 12px', lineHeight: 1.5 }}>
+              Used when no per-agent model is set.
+            </p>
+            {globalDefault.provider && globalDefault.model ? (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+                  borderRadius: 8, background: 'rgba(129,140,248,0.08)',
+                  border: '1px solid rgba(129,140,248,0.20)',
+                }}
+              >
+                <i className="fa-solid fa-circle-check" style={{ color: '#818cf8', fontSize: 11, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#dde2f0', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {globalDefault.provider} / {globalDefault.model}
+                </span>
+                <button
+                  onClick={async () => {
+                    await window.electronAPI.providers.setGlobalDefault('', '')
+                    load()
+                  }}
+                  style={{
+                    padding: '2px 7px', borderRadius: 5, fontSize: 10,
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+                    color: 'rgba(255,255,255,0.40)', cursor: 'pointer', flexShrink: 0,
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                Auto — uses the first configured provider.
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

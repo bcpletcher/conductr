@@ -21,6 +21,11 @@ import { registerGitHandlers } from './ipc/git'
 import { registerGithubHandlers } from './ipc/github'
 import { registerMcpHandlers, initMcpConnections } from './ipc/mcp'
 import { disconnectAll } from './mcp/manager'
+import { registerOpenclawHandlers } from './ipc/openclaw'
+import { spawnGateway, killGateway } from './openclaw/gateway'
+import { registerNetworkHandlers, cleanupNetworkHandlers } from './ipc/network'
+import { registerPipelineHandlers } from './ipc/pipelines'
+import { registerClaudeCodeHandlers } from './ipc/claudeCode'
 import { createTray, destroyTray } from './tray'
 
 const isMac = process.platform === 'darwin'
@@ -245,6 +250,21 @@ app.whenReady().then(() => {
   // Auto-connect enabled MCP servers after DB is ready
   initMcpConnections().catch(console.error)
 
+  if (mainWindow) {
+    registerOpenclawHandlers(mainWindow)
+    // Auto-spawn OpenClaw Gateway if installed
+    spawnGateway().catch(console.error)
+
+    // Phase 16: Network / Server Mode
+    registerNetworkHandlers(mainWindow)
+
+    // Phase 17: Multi-Agent Pipelines & Swarms
+    registerPipelineHandlers(mainWindow)
+  }
+
+  // Phase 18: Claude Code Mode IPC handlers (no mainWindow required)
+  registerClaudeCodeHandlers()
+
   // Test-only IPC: run a prompt through the LLM router without opening the UI
   if (process.env.NODE_ENV === 'test') {
     ipcMain.handle('test:runPrompt', async (_, system: string, user: string, opts: Record<string, unknown>) => {
@@ -257,6 +277,8 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   destroyTray()
   disconnectAll().catch(console.error)
+  killGateway().catch(console.error)
+  cleanupNetworkHandlers()
 })
 
 app.on('window-all-closed', () => {

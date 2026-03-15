@@ -1,0 +1,257 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1773607623003,
+  "projectRoot": "/Users/bcpletcher/Desktop/mission-control",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "@playwright/test",
+        "version": "1.58.2",
+        "category": "testing"
+      },
+      {
+        "name": "vite",
+        "version": "5.0.12",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "electron-vite dev",
+      "build": "electron-vite build",
+      "build:mac": "npm run build && electron-builder --mac",
+      "build:win": "npm run build && electron-builder --win",
+      "preview": "electron-vite preview",
+      "typecheck": "tsc --noEmit",
+      "test": "npm run build && npx playwright test",
+      "test:integration": "npm run build && npx playwright test --config=playwright.integration.config.ts",
+      "generate-icons": "node scripts/generate-icons.mjs"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": "*.spec.ts",
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "public",
+      "scripts",
+      "src",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 5,
+      "lastAccessed": 1773607622979,
+      "keyFiles": [
+        "architecture.md",
+        "context.md",
+        "readme.md",
+        "roadmap.md",
+        "v1spec.md"
+      ]
+    },
+    "out": {
+      "path": "out",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1773607622980,
+      "keyFiles": []
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 4,
+      "lastAccessed": 1773607622984,
+      "keyFiles": [
+        "icon.icns",
+        "icon.ico",
+        "icon.png"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 1,
+      "lastAccessed": 1773607622984,
+      "keyFiles": [
+        "generate-icons.mjs"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1773607622986,
+      "keyFiles": []
+    },
+    "test-results": {
+      "path": "test-results",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773607622989,
+      "keyFiles": []
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 22,
+      "lastAccessed": 1773607622989,
+      "keyFiles": [
+        "agents.spec.ts",
+        "app-launch.spec.ts",
+        "chat.spec.ts",
+        "clients.spec.ts",
+        "command-palette.spec.ts"
+      ]
+    },
+    "src/api": {
+      "path": "src/api",
+      "purpose": "API routes",
+      "fileCount": 3,
+      "lastAccessed": 1773607622992,
+      "keyFiles": [
+        "claude.ts",
+        "openclaw-client.ts",
+        "router.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/renderer/src/pages/Settings.tsx",
+      "accessCount": 24,
+      "lastAccessed": 1773611336137,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Agents.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1773612032542,
+      "type": "directory"
+    },
+    {
+      "path": "src/renderer/src/env.d.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773610876162,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/store/ui.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773610894047,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/components/Sidebar.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1773610933121,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/components/Onboarding.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1773611735244,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Chat.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1773611919964,
+      "type": "file"
+    },
+    {
+      "path": "src/main/db/schema.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773610751452,
+      "type": "file"
+    },
+    {
+      "path": "src/main/index.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773610828956,
+      "type": "file"
+    },
+    {
+      "path": "src/preload/index.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773610856621,
+      "type": "file"
+    },
+    {
+      "path": "src/agents/claudeCodeRunner.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773612070999,
+      "type": "file"
+    },
+    {
+      "path": "src/agents/runner.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773610819664,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/App.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773610907289,
+      "type": "file"
+    },
+    {
+      "path": "src/main/ipc/claudeCode.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773610775736,
+      "type": "file"
+    },
+    {
+      "path": "src/main/db/documents.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773610799375,
+      "type": "directory"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "accessCount": 1,
+      "lastAccessed": 1773611780564,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

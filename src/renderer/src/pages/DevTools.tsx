@@ -56,7 +56,7 @@ export default function DevTools(): React.JSX.Element {
   const [tab, setTab] = useState<DevTab>('repos')
   const accentColor = useUIStore((s) => s.accentColor)
 
-  const tabs: { id: DevTab; label: string; icon: string }[] = [
+  const navItems: { id: DevTab; label: string; icon: string }[] = [
     { id: 'repos',    label: 'Repos',    icon: 'fa-solid fa-folder-open' },
     { id: 'terminal', label: 'Terminal', icon: 'fa-solid fa-terminal' },
     { id: 'git',      label: 'Git',      icon: 'fa-solid fa-code-branch' },
@@ -64,16 +64,12 @@ export default function DevTools(): React.JSX.Element {
   ]
 
   return (
-    <div data-testid="devtools-page" className="flex flex-col h-full" style={{ gap: 0 }}>
+    <div data-testid="devtools-page" className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="page-header flex items-start justify-between flex-shrink-0">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.03em', lineHeight: 1 }}>
-            Developer Tools
-          </h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginTop: 4 }}>
-            Connect repos, run commands, manage git and GitHub
-          </p>
+          <h1 className="page-title">Developer Tools</h1>
+          <p className="page-subtitle">Connect repos, run commands, manage git and GitHub</p>
         </div>
         <div style={{
           padding: '6px 14px', borderRadius: 20,
@@ -84,38 +80,58 @@ export default function DevTools(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-5" style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 12, padding: 4,
-      }}>
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{
-              flex: 1, padding: '8px 0',
-              borderRadius: 9, border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-              background: tab === t.id ? 'rgba(255,255,255,0.07)' : 'transparent',
-              color: tab === t.id ? '#eef0f8' : 'rgba(255,255,255,0.45)',
-              transition: 'all 0.15s',
-              boxShadow: tab === t.id ? 'inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
-            }}
-          >
-            <i className={`${t.icon} mr-2`} style={{ fontSize: 12 }} />
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Rail + Content */}
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* Left rail */}
+        <div
+          className="card"
+          style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+            <div className="section-label px-2 pt-2 pb-3">Tools</div>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '9px 12px',
+                  borderRadius: 9, border: 'none', cursor: 'pointer',
+                  background: tab === item.id ? 'rgba(129,140,248,0.12)' : 'transparent',
+                  boxShadow: tab === item.id ? 'inset 0 0 0 1px rgba(129,140,248,0.25)' : 'none',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  transition: 'background 0.12s', marginBottom: 2,
+                }}
+                onMouseEnter={(e) => { if (tab !== item.id) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={(e) => { if (tab !== item.id) e.currentTarget.style.background = 'transparent' }}
+              >
+                <i
+                  className={item.icon}
+                  style={{
+                    fontSize: 13, flexShrink: 0, width: 16, textAlign: 'center',
+                    color: tab === item.id ? accentColor : 'rgba(255,255,255,0.38)',
+                  }}
+                />
+                <span style={{
+                  fontSize: 13,
+                  fontWeight: tab === item.id ? 600 : 400,
+                  color: tab === item.id ? '#eef0f8' : 'rgba(255,255,255,0.54)',
+                }}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-y-auto">
-        {tab === 'repos'    && <ReposTab />}
-        {tab === 'terminal' && <TerminalTab />}
-        {tab === 'git'      && <GitTab />}
-        {tab === 'github'   && <GithubTab />}
+        {/* Right content */}
+        <div className="card flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto p-4">
+            {tab === 'repos'    && <ReposTab />}
+            {tab === 'terminal' && <TerminalTab />}
+            {tab === 'git'      && <GitTab />}
+            {tab === 'github'   && <GithubTab />}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -191,7 +207,7 @@ function ReposTab(): React.JSX.Element {
         </div>
         <div className="space-y-1.5">
           {repos.length === 0 && (
-            <div style={{ padding: '20px 12px', textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>
+            <div style={{ padding: '20px 12px', textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
               No repos connected.<br />Click Connect to add one.
             </div>
           )}
@@ -297,7 +313,7 @@ function ReposTab(): React.JSX.Element {
       )}
 
       {!selected && repos.length > 0 && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>
           Select a repo to browse its files
         </div>
       )}
@@ -414,7 +430,7 @@ function TerminalTab(): React.JSX.Element {
       {/* Session outputs */}
       <div ref={outputRef} className="flex-1 overflow-y-auto space-y-3">
         {sessions.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 13, paddingTop: 40 }}>
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13, paddingTop: 40 }}>
             No commands run yet. Type a command above and press Run.
           </div>
         )}
@@ -602,7 +618,7 @@ function GitTab(): React.JSX.Element {
                 </div>
               ))}
               {status.isClean && (
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Working tree clean</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Working tree clean</div>
               )}
             </div>
           </div>
@@ -677,7 +693,7 @@ function GitTab(): React.JSX.Element {
             </span>
           </div>
           {log.length === 0
-            ? <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>No commits yet</div>
+            ? <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>No commits yet</div>
             : log.slice(0, 5).map((c) => (
               <div key={c.hash} className="flex items-start gap-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#818cf8', flexShrink: 0, marginTop: 1 }}>{c.hash}</span>
@@ -881,7 +897,7 @@ function GithubTab(): React.JSX.Element {
       {/* Right: issues list */}
       <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
         {issues.length === 0
-          ? <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 13, paddingTop: 60 }}>
+          ? <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13, paddingTop: 60 }}>
               {token?.configured ? 'Select a repo and click "Load Issues"' : 'Connect a GitHub token to load issues'}
             </div>
           : issues.map((issue) => (

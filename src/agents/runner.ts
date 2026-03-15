@@ -296,6 +296,14 @@ export async function runTask(
   const task = getTaskById(taskId)
   if (!task) throw new Error(`Task ${taskId} not found`)
 
+  // Phase 18: dispatch to Claude Code CLI runner when in claude-code mode
+  const { getSetting } = await import('../main/db/settings')
+  const conductorMode = getSetting('conductor_mode') ?? 'claude-code'
+  if (conductorMode === 'claude-code') {
+    const { runTaskViaClaude } = await import('./claudeCodeRunner')
+    return runTaskViaClaude(taskId, onLog, onProgress)
+  }
+
   const agent = task.agent_id ? getAgentById(task.agent_id) : null
 
   // Mark active

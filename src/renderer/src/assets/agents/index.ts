@@ -49,3 +49,26 @@ export const AGENT_COLORS: Record<string, string> = {
 export function getAgentColor(agentId: string | null | undefined): string {
   return AGENT_COLORS[agentId ?? ''] ?? '#818cf8'
 }
+
+/**
+ * Short one-line title per agent — used in chat header and empty-state cards.
+ * Deliberately concise so it reads cleanly at subtitle scale.
+ */
+export const AGENT_TITLES: Record<string, string> = {
+  'agent-lyra':     'Lead Intelligence Orchestrator',
+  'agent-nova':     'Full-Stack Engineer',
+  'agent-scout':    'Research Intelligence Analyst',
+  'agent-forge':    'Backend Systems Engineer',
+  'agent-pixel':    'Design & UI Engineer',
+  'agent-sentinel': 'Security & QA Engineer',
+  'agent-courier':  'Communications Operator',
+  'agent-nexus':    'Integration Specialist',
+  'agent-helm':     'Infrastructure Engineer',
+  'agent-atlas':    'Operations Coordinator',
+  'agent-ledger':   'Financial Intelligence',
+}
+
+/** Returns the agent's short display title, or empty string as fallback. */
+export function getAgentTitle(agentId: string | null | undefined): string {
+  return AGENT_TITLES[agentId ?? ''] ?? ''
+}
