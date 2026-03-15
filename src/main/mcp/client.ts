@@ -25,18 +25,37 @@ export class McpServerClient {
     let transport
     if (this.config.type === 'stdio') {
       if (!this.config.command) throw new Error(`Server "${this.config.name}": command is required for stdio type`)
+
+      // Ensure the full PATH from the Electron process is inherited so npx/node can be found
+      // on macOS even when launched from GUI (where PATH is minimal)
+      const inheritedEnv: Record<string, string> = {}
+      for (const [k, v] of Object.entries(process.env)) {
+        if (v !== undefined) inheritedEnv[k] = v
+      }
+
       transport = new StdioClientTransport({
         command: this.config.command,
         args: this.config.args ?? [],
-        env: this.config.env,
+        env: { ...inheritedEnv, ...(this.config.env ?? {}) },
         stderr: 'pipe',
+      })
+
+      // Pipe stderr to console so connection errors are visible in the Electron dev console
+      transport.stderr?.on('data', (chunk: Buffer) => {
+        const text = chunk.toString().trim()
+        if (text) console.error(`[MCP:${this.config.name}] stderr:`, text)
       })
     } else {
       if (!this.config.url) throw new Error(`Server "${this.config.name}": url is required for sse type`)
       transport = new SSEClientTransport(new URL(this.config.url))
     }
 
-    await this.client.connect(transport)
+    try {
+      await this.client.connect(transport)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new Error(`MCP server "${this.config.name}" failed to connect: ${msg}. Check command/args and that the package is installed.`)
+    }
   }
 
   async listTools(): Promise<McpTool[]> {

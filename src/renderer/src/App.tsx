@@ -34,7 +34,7 @@ import Metrics from './pages/Metrics'
 import Journal from './pages/Journal'
 import Clients from './pages/Clients'
 import Settings from './pages/Settings'
-import Blueprint from './pages/Blueprint'
+import Storyboard from './pages/Blueprint'
 import Providers from './pages/Providers'
 import DevTools from './pages/DevTools'
 
@@ -66,7 +66,7 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   providers: Providers,
   devtools: DevTools,
   settings: Settings,
-  blueprint: Blueprint,
+  blueprint: Storyboard,
 }
 
 export default function App(): React.JSX.Element {

@@ -38,6 +38,7 @@ interface UIStore {
   openNotifPanel: () => void
   closeNotifPanel: () => void
   markAllNotifsRead: () => void
+  dismissNotification: (id: string) => void
   clearNotifications: () => void
 
   // Shortcut cheat sheet
@@ -66,6 +67,12 @@ interface UIStore {
   density: 'comfortable' | 'compact'
   setDensity: (d: 'comfortable' | 'compact') => void
 
+  // Glass card controls
+  cardGlassIntensity: number       // 0–1: controls backdrop blur
+  setCardGlassIntensity: (v: number) => void
+  cardPanelDarkness: number        // 0–1: controls background opacity
+  setCardPanelDarkness: (v: number) => void
+
   // Keyboard shortcuts (customizable)
   keybindings: { palette: string; search: string; sheet: string }
   setKeybinding: (name: 'palette' | 'search' | 'sheet', combo: string) => void
@@ -78,6 +85,25 @@ interface UIStore {
  * Alpha variants use hex+2char syntax (#rrggbbaa):
  *   1f = 12%  |  26 = 15%  |  38 = 22%  |  47 = 28%  |  7a = 48%
  */
+function applyGlassBlur(v: number): void {
+  const blur = Math.round(v * 72)   // 0–72 px
+  document.documentElement.style.setProperty('--card-blur', `${blur}px`)
+}
+
+function applyPanelDarkness(v: number): void {
+  const opacity     = (0.02 + v * 0.10).toFixed(3)    // 0.02–0.12
+  const opacityDark = (0.01 + v * 0.07).toFixed(3)    // 0.01–0.08
+  const s = document.documentElement.style
+  s.setProperty('--card-bg', `rgba(255,255,255,${opacity})`)
+  s.setProperty('--card-bg-dark', `rgba(255,255,255,${opacityDark})`)
+}
+
+/** @deprecated use applyGlassBlur + applyPanelDarkness */
+function applyGlassIntensity(v: number): void {
+  applyGlassBlur(v)
+  applyPanelDarkness(v)
+}
+
 function applyAccentToCSSVars(color: string): void {
   const s = document.documentElement.style
   s.setProperty('--color-accent',        color)
@@ -127,6 +153,8 @@ export const useUIStore = create<UIStore>((set) => ({
     set((state) => ({
       notifications: state.notifications.map((n) => ({ ...n, read: true })),
     })),
+  dismissNotification: (id) =>
+    set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) })),
   clearNotifications: () => set({ notifications: [] }),
 
   isSheetOpen: false,
@@ -155,6 +183,17 @@ export const useUIStore = create<UIStore>((set) => ({
   setDensity: (d) => {
     document.documentElement.setAttribute('data-density', d)
     set({ density: d })
+  },
+
+  cardGlassIntensity: 0.67,
+  setCardGlassIntensity: (v) => {
+    applyGlassBlur(v)
+    set({ cardGlassIntensity: v })
+  },
+  cardPanelDarkness: 0.40,
+  setCardPanelDarkness: (v) => {
+    applyPanelDarkness(v)
+    set({ cardPanelDarkness: v })
   },
 
   keybindings: { palette: 'cmd+k', search: 'cmd+shift+f', sheet: 'cmd+/' },

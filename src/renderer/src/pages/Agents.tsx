@@ -103,6 +103,41 @@ const PROTOCOL_RULES = [
   'Escalate budget overruns immediately to Commander.',
 ]
 
+// ─── Markdown viewer ─────────────────────────────────────────────────────────
+
+function MarkdownView({ content, accent }: { content: string; accent: string }): React.JSX.Element {
+  const lines = content.split('\n')
+  const nodes: React.ReactNode[] = []
+  let key = 0
+
+  for (const line of lines) {
+    if (line.startsWith('### ')) {
+      nodes.push(<h3 key={key++} style={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '14px 0 5px' }}>{line.slice(4)}</h3>)
+    } else if (line.startsWith('## ')) {
+      nodes.push(<h2 key={key++} style={{ fontSize: 14, fontWeight: 700, color: '#eef0f8', letterSpacing: '-0.01em', margin: '18px 0 6px', paddingBottom: 5, borderBottom: `1px solid ${accent}28` }}>{line.slice(3)}</h2>)
+    } else if (line.startsWith('# ')) {
+      nodes.push(<h1 key={key++} style={{ fontSize: 16, fontWeight: 750, color: '#eef0f8', letterSpacing: '-0.02em', margin: '0 0 10px' }}>{line.slice(2)}</h1>)
+    } else if (line.startsWith('- ')) {
+      nodes.push(
+        <div key={key++} style={{ display: 'flex', gap: 7, margin: '2px 0', paddingLeft: 2 }}>
+          <span style={{ fontSize: 10, color: accent, marginTop: 4, flexShrink: 0 }}>▸</span>
+          <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{line.slice(2)}</span>
+        </div>
+      )
+    } else if (line.trim() === '') {
+      nodes.push(<div key={key++} style={{ height: 4 }} />)
+    } else {
+      nodes.push(<p key={key++} style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.60)', lineHeight: 1.6, margin: '2px 0' }}>{line}</p>)
+    }
+  }
+
+  return (
+    <div style={{ fontFamily: 'inherit' }}>
+      {nodes}
+    </div>
+  )
+}
+
 // ─── Roster Item ─────────────────────────────────────────────────────────────
 interface RosterItemProps {
   agent: Agent
@@ -199,6 +234,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
   const [profileTab, setProfileTab] = useState<ProfileTab>('profile')
   const [files, setFiles] = useState<AgentFile[]>([])
   const [editingFile, setEditingFile] = useState<string | null>(null)
+  const [viewingFile, setViewingFile] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [memories, setMemories] = useState<AgentMemory[]>([])
@@ -271,7 +307,14 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
     const existing = files.find(f => f.filename === filename)
     setEditContent(existing?.content ?? FILE_TEMPLATES[filename] ?? '')
     setEditingFile(filename)
+    setViewingFile(null)
     setTimeout(() => textareaRef.current?.focus(), 50)
+  }
+
+  function viewFile(filename: string): void {
+    setViewingFile(viewingFile === filename ? null : filename)
+    setEditingFile(null)
+    setEditContent('')
   }
 
   function cancelEdit(): void {
@@ -559,12 +602,13 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                 const saved = files.find(f => f.filename === filename)
                 const hasContent = !!(saved?.content)
                 const isEditing = editingFile === filename
+                const isViewing = viewingFile === filename
 
                 return (
                   <div key={filename} style={{
                     borderRadius: 12,
-                    border: `1px solid ${isEditing ? `${accent}30` : 'rgba(255,255,255,0.06)'}`,
-                    background: isEditing ? `${accent}07` : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isEditing ? `${accent}30` : isViewing ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'}`,
+                    background: isEditing ? `${accent}07` : isViewing ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.02)',
                     overflow: 'hidden',
                     transition: 'border-color 0.15s, background 0.15s',
                   }}>
@@ -618,6 +662,20 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                             <i className="fa-solid fa-trash" />
                           </button>
                         )}
+                        {hasContent && !isEditing && (
+                          <button
+                            onClick={() => viewFile(filename)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 7,
+                              background: isViewing ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                              border: `1px solid ${isViewing ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.08)'}`,
+                              color: isViewing ? '#eef0f8' : 'rgba(255,255,255,0.45)',
+                              fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                            }}
+                          >
+                            <i className={`fa-solid fa-${isViewing ? 'eye-slash' : 'eye'}`} style={{ fontSize: 10 }} />
+                          </button>
+                        )}
                         <button
                           onClick={() => isEditing ? cancelEdit() : openFile(filename)}
                           style={{
@@ -632,6 +690,13 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                         </button>
                       </div>
                     </div>
+
+                    {/* Inline viewer */}
+                    {isViewing && saved?.content && (
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '12px 16px 16px' }}>
+                        <MarkdownView content={saved.content} accent={accent} />
+                      </div>
+                    )}
 
                     {/* Inline editor */}
                     {isEditing && (

@@ -33,6 +33,8 @@ test.describe('Settings page', () => {
   })
 
   test('shows app info in about section', async ({ page }) => {
+    // Navigate to About section in the settings sidebar
+    await page.click('[data-testid="page-settings"] button:has-text("About")')
     const settings = page.locator('[data-testid="page-settings"]')
     await expect(settings.getByText('claude-sonnet-4-6')).toBeVisible()
     await expect(settings.getByText('Electron · React · SQLite')).toBeVisible()

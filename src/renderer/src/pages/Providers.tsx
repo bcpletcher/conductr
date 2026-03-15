@@ -128,11 +128,14 @@ function ProviderCard({
   return (
     <div
       style={{
-        background: 'rgba(255,255,255,0.03)',
+        background: 'rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(48px) saturate(1.1)',
+        WebkitBackdropFilter: 'blur(48px) saturate(1.1)',
         border: cardBorder,
         borderRadius: 16,
         padding: '20px 22px',
         marginBottom: 12,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.40)',
         transition: 'border-color 0.2s',
       }}
     >
@@ -668,7 +671,7 @@ export default function Providers(): React.JSX.Element {
   const freeModels = models.filter((m) => m.isFree)
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 40 }}>
+    <div data-testid="providers-page" style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 40 }}>
       {/* Page header */}
       <div style={{ marginBottom: 28 }}>
         <h1

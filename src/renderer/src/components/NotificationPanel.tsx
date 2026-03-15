@@ -22,11 +22,12 @@ const TYPE_META: Record<Notification['type'], { color: string; bg: string; icon:
 }
 
 export default function NotificationPanel(): React.JSX.Element {
-  const isOpen        = useUIStore((s) => s.isNotifPanelOpen)
-  const closePanel    = useUIStore((s) => s.closeNotifPanel)
-  const notifications = useUIStore((s) => s.notifications)
-  const clearAll      = useUIStore((s) => s.clearNotifications)
-  const unreadCount   = notifications.filter((n) => !n.read).length
+  const isOpen            = useUIStore((s) => s.isNotifPanelOpen)
+  const closePanel        = useUIStore((s) => s.closeNotifPanel)
+  const notifications     = useUIStore((s) => s.notifications)
+  const clearAll          = useUIStore((s) => s.clearNotifications)
+  const dismissNotif      = useUIStore((s) => s.dismissNotification)
+  const unreadCount       = notifications.filter((n) => !n.read).length
 
   // Close on Escape
   useEffect(() => {
@@ -131,7 +132,7 @@ export default function NotificationPanel(): React.JSX.Element {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.40)',
-                  fontSize: 14, lineHeight: 1, transition: 'all 0.15s',
+                  fontSize: 11, transition: 'all 0.15s',
                 }}
                 onMouseEnter={e => {
                   const el = e.currentTarget as HTMLElement
@@ -144,7 +145,7 @@ export default function NotificationPanel(): React.JSX.Element {
                   el.style.color = 'rgba(255,255,255,0.40)'
                 }}
               >
-                ×
+                <i className="fa-solid fa-xmark" />
               </button>
             </div>
           </div>
@@ -209,6 +210,20 @@ export default function NotificationPanel(): React.JSX.Element {
                       </span>
                     </div>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); dismissNotif(n.id) }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'rgba(255,255,255,0.20)', fontSize: 10, padding: '2px 4px',
+                      borderRadius: 5, flexShrink: 0, alignSelf: 'flex-start', marginTop: 1,
+                      transition: 'color 0.12s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.60)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.20)' }}
+                    title="Dismiss"
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
                 </div>
               )
             })

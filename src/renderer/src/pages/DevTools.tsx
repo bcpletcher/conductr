@@ -64,7 +64,7 @@ export default function DevTools(): React.JSX.Element {
   ]
 
   return (
-    <div className="flex flex-col h-full" style={{ gap: 0 }}>
+    <div data-testid="devtools-page" className="flex flex-col h-full" style={{ gap: 0 }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
@@ -563,7 +563,7 @@ function GitTab(): React.JSX.Element {
 
         {/* Branch info */}
         {status && !status.error && (
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ background: 'var(--card-bg, rgba(255,255,255,0.04))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
             <div className="flex items-center justify-between mb-2">
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Branch</span>
               {loadingStatus && <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }} />}
@@ -610,7 +610,7 @@ function GitTab(): React.JSX.Element {
 
         {/* Commit */}
         {hasChanges && (
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ background: 'var(--card-bg, rgba(255,255,255,0.04))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 8 }}>
               Commit
             </div>
@@ -644,7 +644,7 @@ function GitTab(): React.JSX.Element {
         )}
 
         {/* New branch */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ background: 'var(--card-bg, rgba(255,255,255,0.04))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 8 }}>
             New Branch
           </div>
@@ -670,7 +670,7 @@ function GitTab(): React.JSX.Element {
       {/* Right: log + diff */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Commit log */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', padding: '12px 14px', flex: '0 0 auto' }}>
+        <div style={{ background: 'var(--card-bg-dark, rgba(255,255,255,0.03))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', padding: '12px 14px', flex: '0 0 auto', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
               Recent Commits
@@ -792,7 +792,7 @@ function GithubTab(): React.JSX.Element {
       {/* Left: token + repo */}
       <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Token card */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ background: 'var(--card-bg, rgba(255,255,255,0.04))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
           <div className="flex items-center gap-2 mb-3">
             <i className="fa-brands fa-github" style={{ fontSize: 16, color: '#eef0f8' }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#eef0f8' }}>GitHub Token</span>
@@ -849,7 +849,7 @@ function GithubTab(): React.JSX.Element {
         </div>
 
         {/* Repo picker */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ background: 'var(--card-bg, rgba(255,255,255,0.04))', backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.30)' }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 8 }}>
             Repo
           </div>
@@ -886,8 +886,11 @@ function GithubTab(): React.JSX.Element {
             </div>
           : issues.map((issue) => (
             <div key={issue.number} style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.07)',
+              background: 'var(--card-bg, rgba(255,255,255,0.04))', borderRadius: 10,
+              backdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
+              WebkitBackdropFilter: 'blur(var(--card-blur, 48px)) saturate(1.1)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 12px rgba(0,0,0,0.25)',
               padding: '12px 16px', marginBottom: 8,
             }}>
               <div className="flex items-start gap-3">

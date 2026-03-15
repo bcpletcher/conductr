@@ -20,7 +20,7 @@ const NAV_ITEMS: NavItemDef[] = [
   { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
   { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
   { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
-  { id: 'blueprint',    label: 'Blueprint',    icon: 'fa-solid fa-route' },
+  { id: 'blueprint',    label: 'Storyboard',   icon: 'fa-solid fa-film' },
   { id: 'devtools',     label: 'Dev Tools',    icon: 'fa-solid fa-code' },
 ]
 

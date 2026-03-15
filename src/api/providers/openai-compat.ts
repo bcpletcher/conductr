@@ -39,21 +39,28 @@ export async function streamOpenAICompat({
   onChunk,
   extraHeaders = {},
 }: OpenAICompatStreamOptions): Promise<OpenAICompatResult> {
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      ...extraHeaders,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: maxTokens,
-      stream: true,
-      stream_options: { include_usage: true },
-    }),
-  })
+  const endpoint = `${baseUrl}/chat/completions`
+  let response: Response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        ...extraHeaders,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: maxTokens,
+        stream: true,
+        stream_options: { include_usage: true },
+      }),
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new Error(`Connection failed to ${baseUrl}: ${msg}. Check your network and API key.`)
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => response.statusText)

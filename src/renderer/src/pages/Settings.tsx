@@ -221,6 +221,10 @@ export default function Settings(): React.JSX.Element {
   const setAccentColor         = useUIStore((s) => s.setAccentColor)
   const density                = useUIStore((s) => s.density)
   const setDensity             = useUIStore((s) => s.setDensity)
+  const cardGlassIntensity     = useUIStore((s) => s.cardGlassIntensity)
+  const setCardGlassIntensity  = useUIStore((s) => s.setCardGlassIntensity)
+  const cardPanelDarkness      = useUIStore((s) => s.cardPanelDarkness)
+  const setCardPanelDarkness   = useUIStore((s) => s.setCardPanelDarkness)
   const [saving, setSaving]    = useState(false)
   const [saved,  setSaved]     = useState(false)
 
@@ -262,6 +266,12 @@ export default function Settings(): React.JSX.Element {
     api.settings.get('wallpaper_custom').then((val) => {
       if (val) setCustomWallpaperPath(val)
     })
+    api.settings.get('card_glass_intensity').then((val) => {
+      if (val !== null) setCardGlassIntensity(parseFloat(val))
+    })
+    api.settings.get('card_panel_darkness').then((val) => {
+      if (val !== null) setCardPanelDarkness(parseFloat(val))
+    })
     api.settings.get('notif_mode').then((val) => {
       if (val === 'always' || val === 'background' || val === 'never') setNotifMode(val)
     })
@@ -276,7 +286,7 @@ export default function Settings(): React.JSX.Element {
     })
     api.mcp.listServers().then(setMcpServers).catch(() => {})
     api.mcp.getRegistry().then(setMcpRegistry).catch(() => {})
-  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath])
+  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath, setCardGlassIntensity, setCardPanelDarkness])
 
   // setAccentColor (from store) sets all CSS vars automatically — no manual setProperty needed
 
@@ -380,14 +390,72 @@ export default function Settings(): React.JSX.Element {
     await saveWallpaperStyle('custom')
   }
 
+  type SettingsSection = 'appearance' | 'notifications' | 'shortcuts' | 'integrations' | 'about'
+  const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
+
+  const NAV_ITEMS: { id: SettingsSection; label: string; icon: string; description: string }[] = [
+    { id: 'appearance',    label: 'Appearance',    icon: 'fa-solid fa-palette',      description: 'Theme, colors, wallpaper' },
+    { id: 'notifications', label: 'Notifications', icon: 'fa-solid fa-bell',         description: 'Alerts and events' },
+    { id: 'shortcuts',     label: 'Shortcuts',     icon: 'fa-solid fa-keyboard',     description: 'Keyboard bindings' },
+    { id: 'integrations',  label: 'Integrations',  icon: 'fa-solid fa-plug',         description: 'MCP tool servers' },
+    { id: 'about',         label: 'About',         icon: 'fa-solid fa-circle-info',  description: 'App info & updates' },
+  ]
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="page-header">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="page-header" style={{ flexShrink: 0 }}>
         <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Appearance & preferences</p>
+        <p className="page-subtitle">Configure appearance, integrations & preferences</p>
       </div>
 
-      {/* ── Appearance ──────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
+
+        {/* ── Left nav ───────────────────────────────────── */}
+        <div style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeSection === item.id
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '10px 12px',
+                  borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: isActive ? `${accentColor}14` : 'transparent',
+                  boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}30` : 'none',
+                  transition: 'background 0.12s', display: 'flex', alignItems: 'center', gap: 10,
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+              >
+                <div
+                  style={{
+                    width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                    background: isActive ? `${accentColor}20` : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${isActive ? `${accentColor}35` : 'rgba(255,255,255,0.09)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  <i className={item.icon} style={{ fontSize: 12, color: isActive ? accentColor : 'rgba(255,255,255,0.46)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? '#eef0f8' : 'rgba(255,255,255,0.70)', lineHeight: 1.2 }}>
+                    {item.label}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.30)', marginTop: 1, lineHeight: 1 }}>
+                    {item.description}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Right content ──────────────────────────────── */}
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingBottom: 32 }}>
+
+      {activeSection === 'appearance' && (
       <section className="card p-5 mb-4">
         <h2 className="text-sm font-semibold text-text-primary mb-5">Appearance</h2>
 
@@ -624,54 +692,83 @@ export default function Settings(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Wallpaper brightness — only shown when an image is active */}
-        {hasImage && (
-          <>
-            {/* Divider */}
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 20 }} />
+        {/* Glass & Display controls */}
+        <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-sm font-semibold text-text-primary mb-4">Glass &amp; Display</p>
 
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <p className="text-sm text-text-primary">Wallpaper brightness</p>
-                <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>
-                  Controls how bright the background image appears
-                </p>
+          {/* Row layout — 3 sliders side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {/* Wallpaper brightness (moved from above) */}
+            {(wallpaperStyle !== 'none') && (
+              <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Brightness</p>
+                  <span data-testid="brightness-value" style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontFamily: 'monospace' }}>{Math.round(wallpaperBrightness * 100)}%</span>
+                </div>
+                <input
+                  data-testid="brightness-slider"
+                  type="range" min={0} max={1} step={0.05}
+                  value={wallpaperBrightness}
+                  onChange={(e) => saveBrightness(parseFloat(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+                />
+                <div className="flex justify-between mt-1">
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Dim</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Full</span>
+                </div>
               </div>
-              <span className="text-sm font-mono text-text-secondary" data-testid="brightness-value">
-                {Math.round(wallpaperBrightness * 100)}%
-              </span>
-            </div>
-
-            <input
-              data-testid="brightness-slider"
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={wallpaperBrightness}
-              onChange={(e) => saveBrightness(parseFloat(e.target.value))}
-              style={{
-                width: '100%',
-                accentColor: 'var(--color-accent)',
-                cursor: 'pointer',
-              }}
-            />
-
-            <div className="flex justify-between mt-1">
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.26)' }}>Off</span>
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.26)' }}>Full</span>
-            </div>
-
-            {(saving || saved) && (
-              <p className="text-xs mt-2" style={{ color: saving ? 'rgba(255,255,255,0.36)' : 'var(--color-accent-green)' }}>
-                {saving ? 'Saving…' : 'Saved'}
-              </p>
             )}
-          </>
-        )}
+
+            {/* Glass blur */}
+            <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+              <div className="flex items-center justify-between mb-2">
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Glass Blur</p>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontFamily: 'monospace' }}>{Math.round(cardGlassIntensity * 100)}%</span>
+              </div>
+              <input
+                type="range" min={0} max={1} step={0.05}
+                value={cardGlassIntensity}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value)
+                  setCardGlassIntensity(v)
+                  api.settings.set('card_glass_intensity', String(v)).catch(() => {})
+                }}
+                style={{ width: '100%', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+              />
+              <div className="flex justify-between mt-1">
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Clear</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Frosted</span>
+              </div>
+            </div>
+
+            {/* Panel darkness */}
+            <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+              <div className="flex items-center justify-between mb-2">
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>Panel Tint</p>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontFamily: 'monospace' }}>{Math.round(cardPanelDarkness * 100)}%</span>
+              </div>
+              <input
+                type="range" min={0} max={1} step={0.05}
+                value={cardPanelDarkness}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value)
+                  setCardPanelDarkness(v)
+                  api.settings.set('card_panel_darkness', String(v)).catch(() => {})
+                }}
+                style={{ width: '100%', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+              />
+              <div className="flex justify-between mt-1">
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Ghost</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)' }}>Solid</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* ── Notifications ───────────────────────────────── */}
+      )}
+
+      {activeSection === 'notifications' && (
       <section className="card p-5 mb-4" data-testid="notif-section">
         <h2 className="text-sm font-semibold text-text-primary mb-5">Notifications</h2>
 
@@ -753,7 +850,9 @@ export default function Settings(): React.JSX.Element {
         </div>
       </section>
 
-      {/* ── Keyboard Shortcuts ──────────────────────────── */}
+      )}
+
+      {activeSection === 'shortcuts' && (
       <section className="card p-5 mb-4">
         <h2 className="text-sm font-semibold text-text-primary mb-1">Keyboard Shortcuts</h2>
         <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.36)' }}>
@@ -781,7 +880,10 @@ export default function Settings(): React.JSX.Element {
         </div>
       </section>
 
-      {/* ── MCP Tool Servers ────────────────────────────── */}
+      )}
+
+      {activeSection === 'integrations' && (
+      <>
       <section className="card p-5 mb-4">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -1028,7 +1130,10 @@ export default function Settings(): React.JSX.Element {
         </div>
       )}
 
-      {/* ── About ───────────────────────────────────────── */}
+      </>
+      )}
+
+      {activeSection === 'about' && (
       <section className="card p-5">
         <h2 className="text-sm font-semibold text-text-primary mb-4">About</h2>
         <div className="space-y-3">
@@ -1041,6 +1146,10 @@ export default function Settings(): React.JSX.Element {
           <UpdateButton accent={accentColor} />
         </div>
       </section>
+      )}
+
+        </div> {/* right content */}
+      </div> {/* flex row */}
     </div>
   )
 }
