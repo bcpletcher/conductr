@@ -11,6 +11,8 @@ import {
   getClientDocuments,
   getClientActivityLog
 } from '../db/clients'
+import { getAllAgents } from '../db/agents'
+import { deleteAgentFile } from '../db/agentFiles'
 
 export function registerClientHandlers(): void {
   ipcMain.handle('clients:getAll', () => getAllClients())
@@ -21,7 +23,16 @@ export function registerClientHandlers(): void {
 
   ipcMain.handle('clients:update', (_e, id: string, input) => updateClient(id, input))
 
-  ipcMain.handle('clients:delete', (_e, id: string) => deleteClient(id))
+  ipcMain.handle('clients:delete', (_e, id: string) => {
+    const result = deleteClient(id)
+    // Cascade: remove client-scoped identity files from all agents
+    const agents = getAllAgents()
+    const filename = `IDENTITY-${id}.md`
+    for (const agent of agents) {
+      deleteAgentFile(agent.id, filename)
+    }
+    return result
+  })
 
   ipcMain.handle('clients:getTaskCount', (_e, clientId: string) => getClientTaskCount(clientId))
 

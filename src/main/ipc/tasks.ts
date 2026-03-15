@@ -12,7 +12,8 @@ import {
 import { getActivityLog, addActivityLog, createDocument } from '../db/documents'
 import { createJournalEntry } from '../db/journal'
 import { getSetting } from '../db/settings'
-import { runTask } from '../../agents/runner'
+import { runTask, estimateTaskTokens } from '../../agents/runner'
+import { generateIdeas } from './ideas'
 
 /**
  * Check whether a native OS notification should be sent for the given event key.
@@ -57,6 +58,10 @@ export function registerTaskHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('tasks:getCounts', () => getTaskCounts())
 
   ipcMain.handle('tasks:getActivityLog', (_e, taskId?: string) => getActivityLog(taskId))
+
+  ipcMain.handle('tasks:estimateTokens', (_e, agentId: string | null, taskTitle: string, taskDescription: string | null) =>
+    estimateTaskTokens(agentId, taskTitle, taskDescription)
+  )
 
   ipcMain.handle('tasks:start', async (_e, taskId: string) => {
     const onLog = (message: string) => {
@@ -105,6 +110,12 @@ export function registerTaskHandlers(mainWindow: BrowserWindow): void {
           task_id: taskId,
           agent_id: task.agent_id || undefined,
         })
+      }
+
+      // Auto-trigger Lyra proposal generation every 10 completed tasks
+      const completedCount = getTasksByStatus('complete').length
+      if (completedCount > 0 && completedCount % 10 === 0) {
+        generateIdeas(mainWindow)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

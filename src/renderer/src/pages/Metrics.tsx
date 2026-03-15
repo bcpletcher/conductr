@@ -136,10 +136,12 @@ export default function Metrics(): React.JSX.Element {
   const [budget, setBudget] = useState<Budget>({ daily: null, monthly: null })
   const [agentSpend, setAgentSpend] = useState<AgentSpendEntry[]>([])
   const [hoveredRow, setHoveredRow] = useState<string | null>(null)
+  const [maxTokensInput, setMaxTokensInput] = useState('')
+  const [historyDepthInput, setHistoryDepthInput] = useState('')
 
   async function load(): Promise<void> {
     try {
-      const [today, monthly, sevenDay, tok, rows, model, bgt, agents] = await Promise.all([
+      const [today, monthly, sevenDay, tok, rows, model, bgt, agents, maxTok, histDepth] = await Promise.all([
         api.metrics.getTodaySpend(),
         api.metrics.getMonthlySpend(),
         api.metrics.get7DaySpend(),
@@ -147,7 +149,9 @@ export default function Metrics(): React.JSX.Element {
         api.metrics.getUsageByTask(20),
         api.metrics.getMostActiveModel(),
         api.metrics.getBudget(),
-        api.metrics.getAgentSpend()
+        api.metrics.getAgentSpend(),
+        api.settings.get('max_tokens_per_request'),
+        api.settings.get('context_history_depth'),
       ])
       setTodaySpend(today)
       setMonthlySpend(monthly)
@@ -157,6 +161,8 @@ export default function Metrics(): React.JSX.Element {
       setActiveModel(model)
       setBudget(bgt)
       setAgentSpend(agents)
+      setMaxTokensInput(maxTok ?? '')
+      setHistoryDepthInput(histDepth ?? '')
     } catch (err) {
       console.error('Metrics load error:', err)
     }
@@ -168,6 +174,14 @@ export default function Metrics(): React.JSX.Element {
     const next = { ...budget, [field]: value }
     setBudget(next)
     await api.metrics.setBudget(next)
+  }
+
+  async function handleMaxTokensSave(): Promise<void> {
+    await api.settings.set('max_tokens_per_request', maxTokensInput.trim())
+  }
+
+  async function handleHistoryDepthSave(): Promise<void> {
+    await api.settings.set('context_history_depth', historyDepthInput.trim())
   }
 
   const sevenDayTotal = sevenDaySpend.reduce((sum, d) => sum + d.total, 0)
@@ -260,6 +274,48 @@ export default function Metrics(): React.JSX.Element {
             limit={budget.monthly}
             onSave={(v) => handleBudgetSave('monthly', v)}
           />
+          <div className="w-px self-stretch bg-white/[0.06]" />
+          {/* Context controls column */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            {/* Per-request output token cap */}
+            <div>
+              <p className="text-xs text-text-muted mb-1">Max output tokens / request</p>
+              <p className="text-xs text-text-muted mb-2 opacity-60">Hard cap on tokens the model can generate. Leave blank for model default (4096).</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={64}
+                  max={200000}
+                  placeholder="e.g. 2048"
+                  value={maxTokensInput}
+                  onChange={(e) => setMaxTokensInput(e.target.value)}
+                  onBlur={handleMaxTokensSave}
+                  onKeyDown={(e) => e.key === 'Enter' && handleMaxTokensSave()}
+                  className="w-24 bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
+                />
+                <span className="text-xs text-text-muted">tokens</span>
+              </div>
+            </div>
+            {/* Chat history depth */}
+            <div>
+              <p className="text-xs text-text-muted mb-1">Chat history depth</p>
+              <p className="text-xs text-text-muted mb-2 opacity-60">Turns of conversation sent as context. Lower = fewer input tokens. Default 40.</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  placeholder="40"
+                  value={historyDepthInput}
+                  onChange={(e) => setHistoryDepthInput(e.target.value)}
+                  onBlur={handleHistoryDepthSave}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHistoryDepthSave()}
+                  className="w-24 bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
+                />
+                <span className="text-xs text-text-muted">turns</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

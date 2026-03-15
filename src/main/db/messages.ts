@@ -6,6 +6,7 @@ export interface DbMessage {
   agent_id: string
   role: 'user' | 'assistant'
   content: string
+  bookmarked: number  // 0 | 1
   created_at: string
 }
 
@@ -23,9 +24,18 @@ export function addMessage(
   const id = uuidv4()
   const created_at = new Date().toISOString()
   getDb()
-    .prepare('INSERT INTO messages (id, agent_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)')
+    .prepare('INSERT INTO messages (id, agent_id, role, content, bookmarked, created_at) VALUES (?, ?, ?, ?, 0, ?)')
     .run(id, agentId, role, content, created_at)
-  return { id, agent_id: agentId, role, content, created_at }
+  return { id, agent_id: agentId, role, content, bookmarked: 0, created_at }
+}
+
+export function toggleBookmark(messageId: string): boolean {
+  const db = getDb()
+  const row = db.prepare('SELECT bookmarked FROM messages WHERE id = ?').get(messageId) as { bookmarked: number } | undefined
+  if (!row) return false
+  const newVal = row.bookmarked === 1 ? 0 : 1
+  db.prepare('UPDATE messages SET bookmarked = ? WHERE id = ?').run(newVal, messageId)
+  return newVal === 1
 }
 
 export function clearMessages(agentId: string): void {

@@ -9,6 +9,21 @@ import WindowControls from './components/WindowControls'
 import Onboarding from './components/Onboarding'
 import SearchModal from './components/SearchModal'
 import { useUIStore } from './store/ui'
+
+// Keybinding helper — 'cmd' means metaKey OR ctrlKey (cross-platform)
+function matchesBinding(e: KeyboardEvent, binding: string): boolean {
+  const parts  = binding.toLowerCase().split('+')
+  const key    = parts[parts.length - 1]
+  const hasMod = e.metaKey || e.ctrlKey
+  const wantsMod   = parts.includes('cmd')
+  const wantsShift = parts.includes('shift')
+  const wantsAlt   = parts.includes('alt')
+  return hasMod === wantsMod
+    && e.shiftKey === wantsShift
+    && e.altKey   === wantsAlt
+    && e.key.toLowerCase() === key
+}
+
 import Dashboard from './pages/Dashboard'
 import Workshop from './pages/Workshop'
 import Agents from './pages/Agents'
@@ -19,6 +34,9 @@ import Metrics from './pages/Metrics'
 import Journal from './pages/Journal'
 import Clients from './pages/Clients'
 import Settings from './pages/Settings'
+import Blueprint from './pages/Blueprint'
+import Providers from './pages/Providers'
+import DevTools from './pages/DevTools'
 
 export type NavPage =
   | 'dashboard'
@@ -30,7 +48,10 @@ export type NavPage =
   | 'workshop'
   | 'clients'
   | 'metrics'
+  | 'providers'
+  | 'devtools'
   | 'settings'
+  | 'blueprint'
 
 const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   dashboard: Dashboard,
@@ -42,7 +63,10 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   workshop: Workshop,
   clients: Clients,
   metrics: Metrics,
+  providers: Providers,
+  devtools: DevTools,
   settings: Settings,
+  blueprint: Blueprint,
 }
 
 export default function App(): React.JSX.Element {
@@ -57,6 +81,8 @@ export default function App(): React.JSX.Element {
   const setDensity             = useUIStore((s) => s.setDensity)
   const setWallpaperStyle      = useUIStore((s) => s.setWallpaperStyle)
   const setCustomWallpaperPath = useUIStore((s) => s.setCustomWallpaperPath)
+  const keybindings            = useUIStore((s) => s.keybindings)
+  const setKeybinding          = useUIStore((s) => s.setKeybinding)
 
   // Show onboarding on first launch (if not completed; skip in test mode or when env var is set)
   useEffect(() => {
@@ -84,28 +110,27 @@ export default function App(): React.JSX.Element {
     window.electronAPI.settings.get('wallpaper_custom').then((val) => {
       if (val) setCustomWallpaperPath(val)
     })
-  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath])
+    window.electronAPI.settings.get('kb_palette').then((val) => {
+      if (val) setKeybinding('palette', val)
+    })
+    window.electronAPI.settings.get('kb_search').then((val) => {
+      if (val) setKeybinding('search', val)
+    })
+    window.electronAPI.settings.get('kb_sheet').then((val) => {
+      if (val) setKeybinding('sheet', val)
+    })
+  }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath, setKeybinding])
 
   // Global keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        openPalette()
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
-        e.preventDefault()
-        openSheet()
-      }
-      // Cmd+Shift+F / Ctrl+Shift+F — global search
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
-        e.preventDefault()
-        openSearch()
-      }
+      if (matchesBinding(e, keybindings.palette)) { e.preventDefault(); openPalette() }
+      if (matchesBinding(e, keybindings.sheet))   { e.preventDefault(); openSheet() }
+      if (matchesBinding(e, keybindings.search))  { e.preventDefault(); openSearch() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openPalette, openSheet, openSearch])
+  }, [openPalette, openSheet, openSearch, keybindings])
 
   // Listen for shortcut sheet trigger from macOS menu bar
   useEffect(() => {
@@ -120,6 +145,18 @@ export default function App(): React.JSX.Element {
     })
     return () => window.electronAPI.app.removeTrayNavigateListener()
   }, [])
+
+  // Auto-updater status → toast
+  const addToast = useUIStore((s) => s.addToast)
+  useEffect(() => {
+    window.electronAPI.update.onStatus(({ type, version }) => {
+      if (type === 'available')
+        addToast(`Update ${version ?? ''} available — downloading…`, 'info')
+      else if (type === 'downloaded')
+        addToast(`Update ${version ?? ''} ready — restart to install`, 'success')
+    })
+    return () => window.electronAPI.update.removeStatusListener()
+  }, [addToast])
 
   return (
     <div className="flex h-screen w-screen overflow-hidden" data-testid="app">

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Modal from '../components/Modal'
 import ActivityFeed from '../components/ActivityFeed'
-import type { Agent, AgentFile, ActivityLogEntry, Task } from '../env.d'
+import type { Agent, AgentFile, AgentMemory, SkillSummary, ActivityLogEntry, Task } from '../env.d'
 import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
 
 const api = window.electronAPI
@@ -15,6 +15,14 @@ function getAccent(agentId: string): string {
 
 // IDs considered the "lead" agent for org chart positioning
 const LEAD_IDS = new Set(['agent-lyra'])
+
+// Phase-locked agents — seeded in DB, shown dimmed in org chart until their phase lands
+const PHASE_LOCKED: Record<string, string> = {
+  'agent-nexus':    'Phase 11',
+  'agent-helm':     'Phase 11',
+  'agent-atlas':    'Phase 12',
+  'agent-ledger':   'Phase 4+',
+}
 
 // The 5 standard files every agent should have
 const STANDARD_FILES = ['SOUL.md', 'TOOLS.md', 'MEMORY.md', 'IDENTITY.md', 'HEARTBEAT.md']
@@ -126,7 +134,7 @@ function RosterItem({ agent, selected, isOnline, onClick }: RosterItemProps): Re
       }}
     >
       <div style={{
-        width: 34, height: 34, borderRadius: '50%',
+        width: 34, height: 34, borderRadius: 9,
         border: '1.5px solid rgba(4,4,14,0.90)',
         boxShadow: `0 0 0 1.5px ${accent}cc, 0 0 10px ${accent}50`,
         background: 'rgba(0,0,0,0.20)',
@@ -134,7 +142,7 @@ function RosterItem({ agent, selected, isOnline, onClick }: RosterItemProps): Re
         flexShrink: 0, overflow: 'hidden',
       }}>
         {svgUrl
-          ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+          ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 9 }} />
           : <span style={{ fontSize: 15 }}>{agent.avatar}</span>
         }
       </div>
@@ -174,7 +182,14 @@ interface AgentProfileProps {
   onEdit: () => void
 }
 
-type ProfileTab = 'profile' | 'files' | 'activity'
+type ProfileTab = 'profile' | 'files' | 'activity' | 'memory'
+
+const SKILL_LEVEL_COLOR: Record<string, string> = {
+  master:       '#f59e0b',
+  expert:       '#818cf8',
+  practitioner: '#34d399',
+  novice:       '#64748b',
+}
 
 function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.JSX.Element {
   const accent = getAccent(agent.id)
@@ -186,6 +201,11 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
   const [editingFile, setEditingFile] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
+  const [memories, setMemories] = useState<AgentMemory[]>([])
+  const [skillSummaries, setSkillSummaries] = useState<SkillSummary[]>([])
+  const [memoryDomainFilter, setMemoryDomainFilter] = useState<string>('')
+  const [hardeningStatus, setHardeningStatus] = useState<string>('')
+  const [memoryCount, setMemoryCount] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const shortRole = agent.operational_role?.split('.')[0]?.split(',')[0]?.trim() ?? ''
 
@@ -194,12 +214,25 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
     setFiles(result)
   }
 
+  async function loadMemories(): Promise<void> {
+    const [mems, skills, count] = await Promise.all([
+      api.memories.getAll(agent.id, { limit: 60 }),
+      api.memories.getSkillSummaries(agent.id),
+      api.memories.getCount(agent.id),
+    ])
+    setMemories(mems)
+    setSkillSummaries(skills)
+    setMemoryCount(count)
+  }
+
   useEffect(() => {
     setProfileTab('profile')
     setEditingFile(null)
     setEditContent('')
+    setMemoryDomainFilter('')
     api.agents.getActivityLog(agent.id, 12).then(setLog).catch(() => {})
     loadFiles().catch(() => {})
+    loadMemories().catch(() => {})
   }, [agent.id])
 
   function openFile(filename: string): void {
@@ -270,7 +303,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18, marginBottom: 14 }}>
           {/* Large icon */}
           <div style={{
-            width: 76, height: 76, borderRadius: '50%',
+            width: 76, height: 76, borderRadius: 18,
             border: '2.5px solid rgba(4,4,14,0.92)',
             boxShadow: `0 0 0 2.5px ${accent}cc, 0 0 20px ${accent}60`,
             background: 'rgba(0,0,0,0.25)',
@@ -278,7 +311,7 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
             flexShrink: 0, overflow: 'hidden',
           }}>
             {svgUrl
-              ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 18 }} />
               : <span style={{ fontSize: 32 }}>{agent.avatar}</span>
             }
           </div>
@@ -359,10 +392,10 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
         {/* Sub-tab bar */}
         <div style={{ display: 'flex', gap: 2 }}>
-          {(['profile', 'files', 'activity'] as ProfileTab[]).map(tab => (
+          {(['profile', 'files', 'activity', 'memory'] as ProfileTab[]).map(tab => (
             <button
               key={tab}
-              onClick={() => { setProfileTab(tab); setEditingFile(null) }}
+              onClick={() => { setProfileTab(tab); setEditingFile(null); if (tab === 'memory') loadMemories().catch(() => {}) }}
               style={{
                 padding: '7px 14px', fontSize: 12,
                 fontWeight: profileTab === tab ? 600 : 400,
@@ -375,7 +408,9 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
             >
               {tab === 'files'
                 ? `Files ${initializedCount}/${STANDARD_FILES.length}`
-                : tab.charAt(0).toUpperCase() + tab.slice(1)
+                : tab === 'memory'
+                  ? `Memory${memoryCount > 0 ? ` ${memoryCount}` : ''}`
+                  : tab.charAt(0).toUpperCase() + tab.slice(1)
               }
             </button>
           ))}
@@ -637,6 +672,135 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
           </div>
         )}
 
+        {/* Memory tab */}
+        {profileTab === 'memory' && (
+          <div>
+            {/* Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 }}>
+              <SectionLabel icon="fa-solid fa-brain">Agent Memory</SectionLabel>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={async () => {
+                    setHardeningStatus('Running…')
+                    const result = await api.memories.runSkillHardening(agent.id)
+                    await loadMemories()
+                    setHardeningStatus(`Done — ${result.created} new, ${result.promoted} promoted`)
+                    setTimeout(() => setHardeningStatus(''), 3000)
+                  }}
+                  style={{
+                    padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 600,
+                    background: `${accent}22`, border: `1px solid ${accent}40`,
+                    color: accent, cursor: 'pointer',
+                  }}
+                >
+                  <i className="fa-solid fa-gears" style={{ marginRight: 5 }} />
+                  Run Skill Hardening
+                </button>
+                {memories.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      await api.memories.clearAgent(agent.id)
+                      await loadMemories()
+                    }}
+                    style={{
+                      padding: '5px 12px', borderRadius: 7, fontSize: 11,
+                      background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.22)',
+                      color: '#f87171', cursor: 'pointer',
+                    }}
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {hardeningStatus && (
+              <div style={{ fontSize: 12, color: accent, marginBottom: 10, opacity: 0.8 }}>{hardeningStatus}</div>
+            )}
+
+            {/* Skill summaries */}
+            {skillSummaries.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Skill Map</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {skillSummaries.slice(0, 12).map(s => (
+                    <button
+                      key={s.domain}
+                      onClick={() => setMemoryDomainFilter(memoryDomainFilter === s.domain ? '' : s.domain)}
+                      style={{
+                        padding: '3px 9px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                        background: memoryDomainFilter === s.domain ? `${SKILL_LEVEL_COLOR[s.skill_level] ?? '#64748b'}22` : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${memoryDomainFilter === s.domain ? SKILL_LEVEL_COLOR[s.skill_level] ?? '#64748b' : 'rgba(255,255,255,0.1)'}`,
+                        color: SKILL_LEVEL_COLOR[s.skill_level] ?? '#94a3b8',
+                      }}
+                    >
+                      {s.domain}
+                      <span style={{ marginLeft: 5, opacity: 0.6, fontSize: 10 }}>{s.skill_level}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Memory list */}
+            {memories.length === 0 ? (
+              <div style={{ textAlign: 'center', paddingTop: 40, color: 'rgba(255,255,255,0.22)' }}>
+                <i className="fa-solid fa-brain" style={{ fontSize: 22, marginBottom: 8, display: 'block' }} />
+                <p style={{ fontSize: 13 }}>No memories yet</p>
+                <p style={{ fontSize: 12, opacity: 0.6, marginTop: 4 }}>Memories are extracted automatically after each task run</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {memories
+                  .filter(m => !memoryDomainFilter || m.domain_tags.includes(`"${memoryDomainFilter}"`))
+                  .map(m => {
+                    const domains = (() => { try { return JSON.parse(m.domain_tags) as string[] } catch { return [] } })()
+                    const skillColor = m.skill_level ? (SKILL_LEVEL_COLOR[m.skill_level] ?? '#64748b') : undefined
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          padding: '10px 14px', borderRadius: 10,
+                          background: 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${skillColor ? `${skillColor}20` : 'rgba(255,255,255,0.06)'}`,
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                          <p style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.5, flex: 1, margin: 0 }}>{m.content}</p>
+                          <button
+                            onClick={async () => { await api.memories.delete(m.id); await loadMemories() }}
+                            style={{
+                              flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
+                              color: 'rgba(255,255,255,0.25)', fontSize: 12, padding: '2px 4px',
+                            }}
+                          >
+                            <i className="fa-solid fa-xmark" />
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                          {domains.map(d => (
+                            <span key={d} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+                              {d}
+                            </span>
+                          ))}
+                          {m.skill_level && (
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: `${skillColor}18`, color: skillColor, marginLeft: 'auto' }}>
+                              {m.skill_level}
+                            </span>
+                          )}
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginLeft: m.skill_level ? 0 : 'auto' }}>
+                            {m.source === 'skill_build' ? 'hardened' : m.source}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   )
@@ -720,9 +884,10 @@ interface OrgCardProps {
   faIcon?: string
   size?: 'large' | 'normal'
   status?: 'online' | 'idle'
+  phaseBadge?: string  // e.g. "Phase 11" — renders card dimmed with badge
 }
 
-function OrgCard({ name, role, accent, svgUrl, avatar, faIcon, size = 'normal', status }: OrgCardProps): React.JSX.Element {
+function OrgCard({ name, role, accent, svgUrl, avatar, faIcon, size = 'normal', status, phaseBadge }: OrgCardProps): React.JSX.Element {
   const isLarge = size === 'large'
   const iconSize = isLarge ? 42 : 34
   const iconRadius = isLarge ? 12 : 9
@@ -730,20 +895,22 @@ function OrgCard({ name, role, accent, svgUrl, avatar, faIcon, size = 'normal', 
     <div style={{
       padding: isLarge ? '13px 16px' : '10px 13px',
       borderRadius: 13,
-      background: `${accent}0c`,
-      border: `1px solid ${accent}26`,
+      background: phaseBadge ? 'rgba(255,255,255,0.02)' : `${accent}0c`,
+      border: `1px solid ${phaseBadge ? 'rgba(255,255,255,0.06)' : `${accent}26`}`,
       display: 'flex', alignItems: 'center', gap: 10,
+      opacity: phaseBadge ? 0.5 : 1,
+      position: 'relative',
     }}>
       <div style={{
-        width: iconSize, height: iconSize, borderRadius: '50%',
+        width: iconSize, height: iconSize, borderRadius: iconRadius,
         border: `${isLarge ? '2px' : '1.5px'} solid rgba(4,4,14,0.90)`,
-        boxShadow: `0 0 0 ${isLarge ? '2px' : '1.5px'} ${accent}cc, 0 0 ${isLarge ? '14px' : '10px'} ${accent}50`,
+        boxShadow: phaseBadge ? 'none' : `0 0 0 ${isLarge ? '2px' : '1.5px'} ${accent}cc, 0 0 ${isLarge ? '14px' : '10px'} ${accent}50`,
         background: 'rgba(0,0,0,0.20)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, overflow: 'hidden',
       }}>
         {svgUrl
-          ? <img src={svgUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+          ? <img src={svgUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: iconRadius }} />
           : faIcon
             ? <i className={faIcon} style={{ fontSize: isLarge ? 16 : 13, color: accent }} />
             : <span style={{ fontSize: isLarge ? 18 : 14, color: accent }}>{avatar ?? name[0]}</span>
@@ -757,20 +924,30 @@ function OrgCard({ name, role, accent, svgUrl, avatar, faIcon, size = 'normal', 
           {name}
         </div>
         <div style={{
-          fontSize: isLarge ? 10.5 : 9.5, color: accent, opacity: 0.80, marginTop: 2,
+          fontSize: isLarge ? 10.5 : 9.5, color: phaseBadge ? 'rgba(255,255,255,0.30)' : accent,
+          opacity: 0.80, marginTop: 2,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {role}
         </div>
       </div>
-      {status && (
+      {phaseBadge ? (
+        <div style={{
+          fontSize: 8.5, fontWeight: 700, color: 'rgba(255,255,255,0.40)',
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+          background: 'rgba(255,255,255,0.07)', borderRadius: 5,
+          padding: '2px 5px', flexShrink: 0,
+        }}>
+          {phaseBadge}
+        </div>
+      ) : status ? (
         <div style={{
           width: 7, height: 7, borderRadius: '50%',
           background: status === 'online' ? '#34d399' : 'rgba(255,255,255,0.18)',
           boxShadow: status === 'online' ? '0 0 5px #34d399' : 'none',
           flexShrink: 0,
         }} />
-      )}
+      ) : null}
     </div>
   )
 }
@@ -783,7 +960,9 @@ interface ProtocolTabProps {
 
 function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Element {
   const leadAgent = agents.find(a => LEAD_IDS.has(a.id)) ?? agents[0] ?? null
-  const subAgents = agents.filter(a => a !== leadAgent)
+  const subAgents     = agents.filter(a => a !== leadAgent)
+  const coreAgents    = subAgents.filter(a => !PHASE_LOCKED[a.id])
+  const lockedAgents  = subAgents.filter(a =>  PHASE_LOCKED[a.id])
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '20px 24px 32px' }}>
@@ -820,20 +999,18 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
               />
             )}
             {/* Connector to sub-agents */}
-            {subAgents.length > 0 && (
+            {coreAgents.length > 0 && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'center', height: 20 }}>
                   <div style={{ width: 1, background: 'rgba(255,255,255,0.10)', height: '100%' }} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-                  {subAgents.slice(0, 6).map(agent => (
+                {/* Core agents — active now */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 7 }}>
+                  {coreAgents.map(agent => (
                     <OrgCard
                       key={agent.id}
                       name={agent.name}
-                      role={
-                        (agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent')
-                          .substring(0, 28)
-                      }
+                      role={(agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent').substring(0, 22)}
                       accent={getAccent(agent.id)}
                       svgUrl={AGENT_AVATARS[agent.id]}
                       avatar={agent.avatar}
@@ -841,6 +1018,31 @@ function ProtocolTab({ agents, agentTasks }: ProtocolTabProps): React.JSX.Elemen
                     />
                   ))}
                 </div>
+                {/* Expansion agents — phase-locked, dimmed */}
+                {lockedAgents.length > 0 && (
+                  <>
+                    <div style={{
+                      margin: '10px 0 6px',
+                      fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.20)',
+                      textTransform: 'uppercase', letterSpacing: '0.10em', textAlign: 'center',
+                    }}>
+                      Expansion Agents
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+                      {lockedAgents.map(agent => (
+                        <OrgCard
+                          key={agent.id}
+                          name={agent.name}
+                          role={(agent.operational_role?.split('.')[0]?.split(',')[0].trim() ?? 'Agent').substring(0, 22)}
+                          accent={getAccent(agent.id)}
+                          svgUrl={AGENT_AVATARS[agent.id]}
+                          avatar={agent.avatar}
+                          phaseBadge={PHASE_LOCKED[agent.id]}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -1056,7 +1258,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
                 }}
               >
                 <div style={{
-                  width: 28, height: 28, borderRadius: '50%',
+                  width: 28, height: 28, borderRadius: 7,
                   border: '1.5px solid rgba(4,4,14,0.90)',
                   boxShadow: `0 0 0 1.5px ${accent}cc, 0 0 8px ${accent}50`,
                   background: 'rgba(0,0,0,0.20)',
@@ -1064,7 +1266,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
                   flexShrink: 0, overflow: 'hidden',
                 }}>
                   {svgUrl
-                    ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ? <img src={svgUrl} alt={agent.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 7 }} />
                     : <span style={{ fontSize: 12 }}>{agent.avatar}</span>
                   }
                 </div>
@@ -1106,7 +1308,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
               flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10,
             }}>
               <div style={{
-                width: 32, height: 32, borderRadius: '50%',
+                width: 32, height: 32, borderRadius: 8,
                 border: '1.5px solid rgba(4,4,14,0.90)',
                 boxShadow: `0 0 0 1.5px ${getAccent(selectedChannel.id)}cc, 0 0 10px ${getAccent(selectedChannel.id)}50`,
                 background: 'rgba(0,0,0,0.20)',
@@ -1114,7 +1316,7 @@ function CommsTab({ agents }: CommsTabProps): React.JSX.Element {
                 overflow: 'hidden', flexShrink: 0,
               }}>
                 {AGENT_AVATARS[selectedChannel.id]
-                  ? <img src={AGENT_AVATARS[selectedChannel.id]} alt={selectedChannel.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ? <img src={AGENT_AVATARS[selectedChannel.id]} alt={selectedChannel.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
                   : <span style={{ fontSize: 14 }}>{selectedChannel.avatar}</span>
                 }
               </div>

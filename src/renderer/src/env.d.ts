@@ -123,6 +123,165 @@ export interface ApiKeyStatus {
   source: 'env' | 'settings' | null
 }
 
+export interface Idea {
+  id: string
+  title: string
+  what: string | null
+  why: string | null
+  risks: string | null
+  effort: string | null    // 'S' | 'M' | 'L' | 'XL'
+  phase: string | null
+  source_agent: string
+  status: 'pending' | 'approved' | 'denied' | 'pinned'
+  deny_reason: string | null
+  task_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentMemory {
+  id: string
+  agent_id: string
+  client_id: string | null
+  domain_tags: string   // JSON array
+  skill_tags: string    // JSON array
+  content: string
+  relevance_score: number
+  source: string        // 'task' | 'skill_build' | 'manual'
+  task_id: string | null
+  skill_level: string | null  // 'novice' | 'practitioner' | 'expert' | 'master'
+  created_at: string
+  last_used_at: string | null
+}
+
+export interface SkillSummary {
+  domain: string
+  memory_count: number
+  skill_level: string
+  agent_id: string
+}
+
+export interface KnowledgeEntry {
+  id: string
+  title: string
+  content: string
+  source_agent: string | null
+  domain_tags: string   // JSON array
+  client_id: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export interface PromptTemplate {
+  id: string
+  agent_id: string | null
+  name: string
+  content: string
+  tags: string          // JSON array
+  usage_count: number
+  created_at: string
+  updated_at: string | null
+}
+
+export interface ProviderStatus {
+  name: string
+  label: string
+  configured: boolean
+  maskedKey: string | null
+}
+
+export interface ModelInfo {
+  id: string
+  name: string
+  provider: string
+  contextWindow: number
+  inputCostPer1k: number
+  outputCostPer1k: number
+  supportsTools: boolean
+  supportsVision: boolean
+  isFree: boolean
+  description?: string
+  recommended?: boolean
+}
+
+export interface ProviderMeta {
+  label: string
+  icon: string
+  color: string
+  description: string
+  keyHint: string
+  docsNote: string
+}
+
+export interface OllamaModel {
+  name: string
+  size: number
+  modified_at: string
+}
+
+export interface Repo {
+  id: string
+  name: string
+  path: string
+  remote_url: string | null
+  created_at: string
+}
+
+export interface FileEntry {
+  name: string
+  path: string
+  isDir: boolean
+}
+
+export interface GitStatus {
+  branch: string | null
+  tracking: string | null
+  ahead: number
+  behind: number
+  staged: string[]
+  modified: string[]
+  not_added: string[]
+  deleted: string[]
+  conflicted: string[]
+  isClean: boolean
+  error?: string
+}
+
+export interface GitCommit {
+  hash: string
+  message: string
+  author: string
+  date: string
+}
+
+export interface GithubIssue {
+  number: number
+  title: string
+  body: string
+  state: string
+  labels: string[]
+  url: string
+  created_at: string
+}
+
+export interface GithubPR {
+  number: number
+  title: string
+  state: string
+  head: string
+  base: string
+  url: string
+  created_at: string
+}
+
+export interface TokenEstimate {
+  systemTokens: number
+  memoryTokens: number
+  taskTokens: number
+  outputBudget: number
+  total: number
+}
+
 export interface Client {
   id: string
   name: string
@@ -142,7 +301,16 @@ export interface Message {
   agent_id: string
   role: 'user' | 'assistant'
   content: string
+  bookmarked: number  // 0 | 1
   created_at: string
+  // Client-side only — not persisted
+  images?: ChatImage[]
+}
+
+export interface ChatImage {
+  data: string      // base64 string (no prefix)
+  mediaType: string // 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp'
+  preview: string   // data URL for display
 }
 
 // Window electronAPI type
@@ -160,6 +328,7 @@ declare global {
         getCounts: () => Promise<TaskCounts>
         getActivityLog: (taskId?: string) => Promise<ActivityLogEntry[]>
         start: (taskId: string) => Promise<Task>
+        estimateTokens: (agentId: string | null, taskTitle: string, taskDescription: string | null) => Promise<TokenEstimate>
         onLogUpdate: (cb: (data: { taskId: string; message: string }) => void) => void
         onProgressUpdate: (cb: (data: { taskId: string; progress: number }) => void) => void
         onStatusUpdate: (cb: (data: { taskId: string; status: string }) => void) => void
@@ -178,6 +347,7 @@ declare global {
         get: (agentId: string, filename: string) => Promise<AgentFile | null>
         save: (agentId: string, filename: string, content: string) => Promise<AgentFile>
         delete: (agentId: string, filename: string) => Promise<void>
+        clearClientIdentity: (clientId: string) => Promise<boolean>
       }
       metrics: {
         getTodaySpend: () => Promise<number>
@@ -197,7 +367,13 @@ declare global {
       chat: {
         getMessages: (agentId: string) => Promise<Message[]>
         clearMessages: (agentId: string) => Promise<boolean>
-        send: (agentId: string, content: string) => void
+        send: (
+          agentId: string,
+          content: string,
+          images?: ChatImage[],
+          mentionContexts?: { agentName: string; messages: { role: string; content: string }[] }[]
+        ) => void
+        toggleBookmark: (messageId: string) => Promise<boolean>
         onChunk: (cb: (data: { agentId: string; chunk: string }) => void) => void
         onDone: (cb: (data: { agentId: string; message: Message }) => void) => void
         onError: (cb: (data: { agentId: string; error: string }) => void) => void
@@ -257,6 +433,102 @@ declare global {
       search: {
         global: (query: string) => Promise<SearchResult[]>
       }
+      ideas: {
+        getAll: (status?: string) => Promise<Idea[]>
+        getPendingCount: () => Promise<number>
+        approve: (id: string, taskId?: string) => Promise<Idea>
+        deny: (id: string, reason: string) => Promise<Idea>
+        pin: (id: string) => Promise<Idea>
+        delete: (id: string) => Promise<boolean>
+        generate: () => void
+        onGenerating: (cb: (data: { status: string }) => void) => void
+        onChunk: (cb: (data: { chunk: string }) => void) => void
+        onDone: (cb: (data: { count: number; ideas: Idea[] }) => void) => void
+        onError: (cb: (data: { error: string }) => void) => void
+        removeAllListeners: () => void
+      }
+      memories: {
+        getAll: (agentId: string, filters?: { clientId?: string | null; domain?: string; limit?: number }) => Promise<AgentMemory[]>
+        delete: (id: string) => Promise<void>
+        clearAgent: (agentId: string, clientId?: string) => Promise<void>
+        getCount: (agentId: string) => Promise<number>
+        getSkillSummaries: (agentId: string) => Promise<SkillSummary[]>
+        runSkillHardening: (agentId?: string) => Promise<{ created: number; promoted: number }>
+        create: (input: { agent_id: string; content: string; domain_tags?: string; skill_tags?: string; client_id?: string }) => Promise<AgentMemory>
+      }
+      knowledge: {
+        getAll: (options?: { domain?: string; clientId?: string; limit?: number }) => Promise<KnowledgeEntry[]>
+        create: (input: { title: string; content: string; source_agent?: string; domain_tags?: string; client_id?: string }) => Promise<KnowledgeEntry>
+        delete: (id: string) => Promise<void>
+      }
+      prompts: {
+        getAll: (agentId?: string) => Promise<PromptTemplate[]>
+        create: (input: { name: string; content: string; agent_id?: string; tags?: string }) => Promise<PromptTemplate>
+        delete: (id: string) => Promise<void>
+        incrementUsage: (id: string) => Promise<void>
+        autoRewrite: (content: string) => Promise<string>
+      }
+      repos: {
+        getAll: () => Promise<Repo[]>
+        add: () => Promise<Repo | null>
+        remove: (id: string) => Promise<boolean>
+        getTree: (repoPath: string, subPath?: string) => Promise<FileEntry[]>
+        readFile: (repoPath: string, filePath: string) => Promise<{ content: string; path: string } | { error: string } | null>
+        writeFile: (repoPath: string, filePath: string, content: string) => Promise<{ ok: boolean; error?: string }>
+        findFile: (repoPath: string, query: string) => Promise<{ path: string; name: string }[]>
+      }
+      terminal: {
+        run: (opts: { cwd: string; command: string; sessionId: string; timeoutMs?: number }) => Promise<{ exitCode: number | null; error?: string }>
+        kill: (sessionId: string) => Promise<boolean>
+        stdin: (opts: { sessionId: string; data: string }) => void
+        getSuggestions: (repoPath: string) => Promise<string[]>
+        onOutput: (cb: (data: { sessionId: string; data: string; type: 'stdout' | 'stderr' }) => void) => void
+        onDone: (cb: (data: { sessionId: string; exitCode: number | null }) => void) => void
+        removeAllListeners: () => void
+      }
+      git: {
+        status: (repoPath: string) => Promise<GitStatus | { error: string }>
+        log: (repoPath: string, limit?: number) => Promise<GitCommit[] | { error: string }>
+        branches: (repoPath: string) => Promise<{ current: string; all: string[] } | { error: string }>
+        createBranch: (repoPath: string, name: string) => Promise<{ ok: boolean; branch?: string; error?: string }>
+        checkout: (repoPath: string, branch: string) => Promise<{ ok: boolean; error?: string }>
+        diff: (repoPath: string, staged?: boolean, filePath?: string) => Promise<{ diff: string } | { error: string }>
+        add: (repoPath: string, files: string[]) => Promise<{ ok: boolean; error?: string }>
+        commit: (repoPath: string, message: string) => Promise<{ ok: boolean; hash?: string; error?: string }>
+        push: (repoPath: string, remote?: string, branch?: string) => Promise<{ ok: boolean; error?: string }>
+        createTaskBranch: (repoPath: string, taskId: string, taskTitle: string) => Promise<{ ok: boolean; branch?: string; error?: string }>
+        isRepo: (repoPath: string) => Promise<boolean>
+      }
+      github: {
+        getToken: () => Promise<{ configured: boolean; masked: string | null }>
+        setToken: (token: string) => Promise<boolean>
+        removeToken: () => Promise<boolean>
+        testToken: (token?: string) => Promise<{ ok: boolean; login?: string; name?: string; error?: string }>
+        openTokenPage: () => Promise<void>
+        getIssues: (remoteUrl: string, state?: 'open' | 'closed' | 'all') => Promise<GithubIssue[] | { error: string }>
+        createPR: (opts: { remoteUrl: string; head: string; base: string; title: string; body: string; issueNumber?: number }) => Promise<{ ok: boolean; url?: string; number?: number; error?: string }>
+        getPRs: (remoteUrl: string) => Promise<GithubPR[] | { error: string }>
+        getRepoInfo: (remoteUrl: string) => Promise<{ name: string; fullName: string; description: string | null; defaultBranch: string; isPrivate: boolean; stars: number; url: string } | null>
+      }
+      providers: {
+        getStatus: () => Promise<ProviderStatus[]>
+        setKey: (provider: string, key: string) => Promise<boolean>
+        removeKey: (provider: string) => Promise<boolean>
+        testConnection: (provider: string, apiKey?: string) => Promise<{ ok: boolean; error?: string; modelCount?: number }>
+        getModels: (provider?: string) => Promise<ModelInfo[]>
+        getGlobalDefault: () => Promise<{ provider: string; model: string } | null>
+        setGlobalDefault: (provider: string, model: string) => Promise<boolean>
+        getAgentModel: (agentId: string) => Promise<{ provider: string | null; model: string | null }>
+        setAgentModel: (agentId: string, provider: string | null, model: string | null) => Promise<boolean>
+        detectOllama: () => Promise<{ running: boolean; version?: string }>
+        getOllamaModels: () => Promise<OllamaModel[]>
+        deleteOllamaModel: (modelName: string) => Promise<boolean>
+        pullOllamaModel: (modelName: string) => void
+        installOllama: () => Promise<void>
+        getMeta: () => Promise<Record<string, ProviderMeta>>
+        onPullProgress: (cb: (data: { model: string; status: string; completed?: number; total?: number; error?: string }) => void) => void
+        removePullProgressListener: () => void
+      }
       app: {
         /** Current OS platform string, e.g. 'darwin' | 'win32' | 'linux' */
         platform: string
@@ -273,6 +545,12 @@ declare global {
         minimize: () => void
         maximize: () => void
         close: () => void
+      }
+      update: {
+        check: () => Promise<{ status: string; version?: string | null }>
+        install: () => void
+        onStatus: (cb: (data: { type: 'available' | 'downloaded' | 'error'; version?: string }) => void) => void
+        removeStatusListener: () => void
       }
     }
   }

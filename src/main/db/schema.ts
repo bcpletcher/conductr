@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import { app } from 'electron'
+import { seedAgentSkillFiles } from './skillTemplates'
+import { migrateToSecureSettings } from '../security'
 
 let db: Database.Database | null = null
 
@@ -20,6 +22,7 @@ export function initDb(): Database.Database {
 
   createTables(db)
   seedDefaults(db)
+  migrateToSecureSettings(db)
 
   return db
 }
@@ -139,7 +142,157 @@ function createTables(db: Database.Database): void {
       FOREIGN KEY (agent_id) REFERENCES agents(id),
       UNIQUE(agent_id, filename)
     );
+
+    CREATE TABLE IF NOT EXISTS ideas (
+      id           TEXT PRIMARY KEY,
+      title        TEXT NOT NULL,
+      what         TEXT,
+      why          TEXT,
+      risks        TEXT,
+      effort       TEXT,
+      phase        TEXT,
+      source_agent TEXT DEFAULT 'Lyra',
+      status       TEXT DEFAULT 'pending',
+      deny_reason  TEXT,
+      task_id      TEXT,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT NOT NULL
+    );
+
+    -- Phase 10: Agent memories (scoped by client + domain)
+    CREATE TABLE IF NOT EXISTS agent_memories (
+      id              TEXT PRIMARY KEY,
+      agent_id        TEXT NOT NULL,
+      client_id       TEXT,
+      domain_tags     TEXT DEFAULT '[]',
+      skill_tags      TEXT DEFAULT '[]',
+      content         TEXT NOT NULL,
+      relevance_score REAL DEFAULT 1.0,
+      source          TEXT DEFAULT 'task',
+      task_id         TEXT,
+      skill_level     TEXT,
+      created_at      TEXT NOT NULL,
+      last_used_at    TEXT,
+      FOREIGN KEY (agent_id) REFERENCES agents(id)
+    );
+
+    -- Phase 10: Cross-agent shared knowledge pool
+    CREATE TABLE IF NOT EXISTS knowledge_base (
+      id           TEXT PRIMARY KEY,
+      title        TEXT NOT NULL,
+      content      TEXT NOT NULL,
+      source_agent TEXT,
+      domain_tags  TEXT DEFAULT '[]',
+      client_id    TEXT,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT
+    );
+
+    -- Phase 10: Prompt templates library
+    CREATE TABLE IF NOT EXISTS prompt_templates (
+      id          TEXT PRIMARY KEY,
+      agent_id    TEXT,
+      name        TEXT NOT NULL,
+      content     TEXT NOT NULL,
+      tags        TEXT DEFAULT '[]',
+      usage_count INTEGER DEFAULT 0,
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT
+    );
+
+    -- Phase 10: FTS5 virtual tables (full-text search)
+    CREATE VIRTUAL TABLE IF NOT EXISTS tasks_fts USING fts5(
+      id UNINDEXED, title, description, tokenize='porter unicode61'
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
+      id UNINDEXED, title, content, tokenize='porter unicode61'
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS journal_fts USING fts5(
+      id UNINDEXED, title, content, tokenize='porter unicode61'
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+      id UNINDEXED, content, tokenize='porter unicode61'
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS agents_fts USING fts5(
+      id UNINDEXED, name, operational_role, system_directive, tokenize='porter unicode61'
+    );
   `)
+
+  // Phase 10: FTS5 keep-in-sync triggers
+  const ftsTriggers = [
+    // tasks
+    `CREATE TRIGGER IF NOT EXISTS tasks_fts_insert AFTER INSERT ON tasks BEGIN
+       INSERT INTO tasks_fts(id, title, description) VALUES (new.id, new.title, new.description);
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS tasks_fts_delete BEFORE DELETE ON tasks BEGIN
+       DELETE FROM tasks_fts WHERE id = old.id;
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS tasks_fts_update AFTER UPDATE ON tasks BEGIN
+       DELETE FROM tasks_fts WHERE id = old.id;
+       INSERT INTO tasks_fts(id, title, description) VALUES (new.id, new.title, new.description);
+     END`,
+    // documents
+    `CREATE TRIGGER IF NOT EXISTS documents_fts_insert AFTER INSERT ON documents BEGIN
+       INSERT INTO documents_fts(id, title, content) VALUES (new.id, new.title, new.content);
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS documents_fts_delete BEFORE DELETE ON documents BEGIN
+       DELETE FROM documents_fts WHERE id = old.id;
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS documents_fts_update AFTER UPDATE ON documents BEGIN
+       DELETE FROM documents_fts WHERE id = old.id;
+       INSERT INTO documents_fts(id, title, content) VALUES (new.id, new.title, new.content);
+     END`,
+    // journal_entries
+    `CREATE TRIGGER IF NOT EXISTS journal_fts_insert AFTER INSERT ON journal_entries BEGIN
+       INSERT INTO journal_fts(id, title, content) VALUES (new.id, new.title, new.content);
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS journal_fts_delete BEFORE DELETE ON journal_entries BEGIN
+       DELETE FROM journal_fts WHERE id = old.id;
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS journal_fts_update AFTER UPDATE ON journal_entries BEGIN
+       DELETE FROM journal_fts WHERE id = old.id;
+       INSERT INTO journal_fts(id, title, content) VALUES (new.id, new.title, new.content);
+     END`,
+    // messages
+    `CREATE TRIGGER IF NOT EXISTS messages_fts_insert AFTER INSERT ON messages BEGIN
+       INSERT INTO messages_fts(id, content) VALUES (new.id, new.content);
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS messages_fts_delete BEFORE DELETE ON messages BEGIN
+       DELETE FROM messages_fts WHERE id = old.id;
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS messages_fts_update AFTER UPDATE ON messages BEGIN
+       DELETE FROM messages_fts WHERE id = old.id;
+       INSERT INTO messages_fts(id, content) VALUES (new.id, new.content);
+     END`,
+    // agents
+    `CREATE TRIGGER IF NOT EXISTS agents_fts_insert AFTER INSERT ON agents BEGIN
+       INSERT INTO agents_fts(id, name, operational_role, system_directive)
+       VALUES (new.id, new.name, new.operational_role, new.system_directive);
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS agents_fts_delete BEFORE DELETE ON agents BEGIN
+       DELETE FROM agents_fts WHERE id = old.id;
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS agents_fts_update AFTER UPDATE ON agents BEGIN
+       DELETE FROM agents_fts WHERE id = old.id;
+       INSERT INTO agents_fts(id, name, operational_role, system_directive)
+       VALUES (new.id, new.name, new.operational_role, new.system_directive);
+     END`,
+  ]
+  for (const sql of ftsTriggers) {
+    try { db.exec(sql) } catch { /* trigger already exists */ }
+  }
+
+  // Phase 10: seed FTS5 tables from existing data (one-time on first run)
+  const ftsInit = db.prepare(`SELECT value FROM settings WHERE key = 'fts5_initialized'`).get()
+  if (!ftsInit) {
+    db.exec(`INSERT INTO tasks_fts(id, title, description) SELECT id, title, COALESCE(description,'') FROM tasks`)
+    db.exec(`INSERT INTO documents_fts(id, title, content) SELECT id, title, COALESCE(content,'') FROM documents`)
+    db.exec(`INSERT INTO journal_fts(id, title, content) SELECT id, title, content FROM journal_entries`)
+    db.exec(`INSERT INTO messages_fts(id, content) SELECT id, content FROM messages`)
+    db.exec(`INSERT INTO agents_fts(id, name, operational_role, system_directive) SELECT id, name, COALESCE(operational_role,''), COALESCE(system_directive,'') FROM agents`)
+    const now = new Date().toISOString()
+    db.prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)`).run('fts5_initialized', '1', now)
+  }
 
   // Phase 5 migrations — add columns to documents table
   const docMigrations = [
@@ -151,6 +304,24 @@ function createTables(db: Database.Database): void {
   for (const sql of docMigrations) {
     try { db.exec(sql) } catch { /* column already exists */ }
   }
+
+  // Phase 8 migrations — message bookmarks
+  try { db.exec(`ALTER TABLE messages ADD COLUMN bookmarked INTEGER DEFAULT 0`) } catch { /* already exists */ }
+
+  // Phase 11 migrations — per-agent model config
+  try { db.exec(`ALTER TABLE agents ADD COLUMN default_provider TEXT`) } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE agents ADD COLUMN default_model TEXT`) } catch { /* already exists */ }
+
+  // Phase 12: Connected repos
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS repos (
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      path       TEXT NOT NULL UNIQUE,
+      remote_url TEXT,
+      created_at TEXT NOT NULL
+    );
+  `)
 }
 
 const DEFAULT_AGENTS = [
@@ -377,4 +548,7 @@ function seedDefaults(db: Database.Database): void {
   for (const [id, { old, agent }] of Object.entries(oldDefaults)) {
     patch.run(agent.system_directive, agent.operational_role, id, old)
   }
+
+  // Seed SOUL.md and TOOLS.md for all agents from the skill library
+  seedAgentSkillFiles(db)
 }

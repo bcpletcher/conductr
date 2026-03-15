@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell, Menu, ipcMain } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
 import { initDb } from './db/schema'
 import { registerTaskHandlers } from './ipc/tasks'
 import { registerAgentHandlers } from './ipc/agents'
@@ -11,6 +12,13 @@ import { registerClientHandlers } from './ipc/clients'
 import { registerSettingsHandlers } from './ipc/settings'
 import { registerAgentFileHandlers } from './ipc/agentFiles'
 import { registerSearchHandlers } from './ipc/search'
+import { registerIdeasHandlers } from './ipc/ideas'
+import { registerMemoryHandlers } from './ipc/memories'
+import { registerProviderHandlers } from './ipc/providers'
+import { registerRepoHandlers } from './ipc/repos'
+import { registerTerminalHandlers } from './ipc/terminal'
+import { registerGitHandlers } from './ipc/git'
+import { registerGithubHandlers } from './ipc/github'
 import { createTray, destroyTray } from './tray'
 
 const isMac = process.platform === 'darwin'
@@ -41,7 +49,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     if (process.env.NODE_ENV === 'test') {
-      mainWindow?.setPosition(-2560, 0)
+      mainWindow?.setPosition(-99999, 0)
       mainWindow?.showInactive()
     } else {
       mainWindow?.show()
@@ -59,6 +67,27 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+}
+
+// Auto-updater — silently check on launch; send status to renderer
+function setupAutoUpdater(): void {
+  if (is.dev || process.env.NODE_ENV === 'test') return
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update:status', { type: 'available', version: info.version })
+  })
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow?.webContents.send('update:status', { type: 'downloaded', version: info.version })
+  })
+  autoUpdater.on('error', () => {
+    // No release server configured yet — ignore silently
+  })
+
+  // Check once, 5 seconds after launch (gives app time to fully load)
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000)
 }
 
 // Window control IPC — used by custom title bar on Windows
@@ -142,6 +171,17 @@ function buildMenu(): void {
           label: 'Keyboard Shortcuts',
           accelerator: isMac ? 'Command+/' : 'Ctrl+/',
           click: () => mainWindow?.webContents.send('open-shortcut-sheet')
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Check for Updates…',
+          click: () => {
+            if (!is.dev) {
+              autoUpdater.checkForUpdates().catch(() => {
+                mainWindow?.webContents.send('update:status', { type: 'error' })
+              })
+            }
+          }
         }
       ]
     }
@@ -150,12 +190,28 @@ function buildMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+// IPC: manual update trigger from renderer (Settings page)
+ipcMain.handle('update:check', async () => {
+  if (is.dev) return { status: 'dev-mode' }
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    return { status: 'checked', version: result?.updateInfo?.version ?? null }
+  } catch {
+    return { status: 'error' }
+  }
+})
+
+ipcMain.on('update:install', () => {
+  autoUpdater.quitAndInstall()
+})
+
 app.whenReady().then(() => {
   initDb()
 
   buildMenu()
   createWindow()
   registerWindowHandlers()
+  setupAutoUpdater()
 
   registerAgentHandlers()
   registerAgentFileHandlers()
@@ -163,6 +219,7 @@ app.whenReady().then(() => {
   registerClientHandlers()
   registerSettingsHandlers()
   registerSearchHandlers()
+  registerProviderHandlers()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -172,7 +229,22 @@ app.whenReady().then(() => {
     registerTaskHandlers(mainWindow)
     registerChatHandlers(mainWindow)
     registerDocumentHandlers(mainWindow)
+    registerIdeasHandlers(mainWindow)
+    registerMemoryHandlers()
+    registerRepoHandlers(mainWindow)
+    registerTerminalHandlers(mainWindow)
     createTray(mainWindow)
+  }
+
+  registerGitHandlers()
+  registerGithubHandlers()
+
+  // Test-only IPC: run a prompt through the LLM router without opening the UI
+  if (process.env.NODE_ENV === 'test') {
+    ipcMain.handle('test:runPrompt', async (_, system: string, user: string, opts: Record<string, unknown>) => {
+      const { runWithRouter } = await import('../api/router')
+      return runWithRouter(system, user, opts as Parameters<typeof runWithRouter>[2])
+    })
   }
 })
 

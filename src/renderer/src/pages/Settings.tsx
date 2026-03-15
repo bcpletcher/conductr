@@ -1,8 +1,130 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useUIStore } from '../store/ui'
 import { WALLPAPER_PRESETS } from '../constants/wallpapers'
 
 const api = window.electronAPI
+
+// ── Keybinding helpers ────────────────────────────────────────────────────────
+function formatBinding(binding: string): string {
+  const parts = binding.toLowerCase().split('+')
+  const key   = parts[parts.length - 1]
+  const isMac = navigator.platform.includes('Mac')
+  const mod   = parts.includes('cmd')   ? (isMac ? '⌘' : 'Ctrl+') : ''
+  const shift = parts.includes('shift') ? (isMac ? '⇧' : 'Shift+') : ''
+  const alt   = parts.includes('alt')   ? (isMac ? '⌥' : 'Alt+')  : ''
+  return `${mod}${shift}${alt}${key.length === 1 ? key.toUpperCase() : key}`
+}
+
+function eventToBinding(e: KeyboardEvent): string {
+  const parts: string[] = []
+  if (e.metaKey || e.ctrlKey) parts.push('cmd')
+  if (e.shiftKey) parts.push('shift')
+  if (e.altKey)   parts.push('alt')
+  parts.push(e.key.toLowerCase())
+  return parts.join('+')
+}
+
+// ── KeybindingRow ─────────────────────────────────────────────────────────────
+function KeybindingRow({
+  label,
+  description,
+  bindingKey,
+  accent,
+}: {
+  label: string
+  description: string
+  bindingKey: 'palette' | 'search' | 'sheet'
+  accent: string
+}): React.JSX.Element {
+  const binding       = useUIStore((s) => s.keybindings[bindingKey])
+  const setKeybinding = useUIStore((s) => s.setKeybinding)
+  const [recording, setRecording] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!recording) return
+    const handler = (e: KeyboardEvent): void => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.key === 'Escape') { setRecording(false); return }
+      // Ignore modifier-only keys
+      if (['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return
+      const combo = eventToBinding(e)
+      setKeybinding(bindingKey, combo)
+      api.settings.set(`kb_${bindingKey}`, combo)
+      setRecording(false)
+    }
+    window.addEventListener('keydown', handler, { capture: true })
+    return () => window.removeEventListener('keydown', handler, { capture: true })
+  }, [recording, bindingKey, setKeybinding])
+
+  const parts = formatBinding(binding).split(/(?=[⌘⇧⌥]|Ctrl\+|Shift\+|Alt\+)/)
+
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+        <p className="text-sm text-text-primary">{label}</p>
+        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>{description}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {recording ? (
+          <div
+            ref={overlayRef}
+            style={{
+              padding: '4px 10px',
+              background: `${accent}18`,
+              border: `1px solid ${accent}50`,
+              borderRadius: 7,
+              fontSize: 11,
+              color: accent,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              animation: 'pulse 1s infinite',
+            }}
+          >
+            Press keys… (Esc to cancel)
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1">
+              {formatBinding(binding).split('').map((char, i) => (
+                <kbd
+                  key={i}
+                  style={{
+                    padding: '2px 6px',
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    borderRadius: 5,
+                    fontSize: 12,
+                    color: 'rgba(255,255,255,0.72)',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {char}
+                </kbd>
+              ))}
+            </div>
+            <button
+              onClick={() => setRecording(true)}
+              style={{
+                padding: '3px 9px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                borderRadius: 6,
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+              }}
+            >
+              Edit
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // ── Toggle switch component ───────────────────────────────────────────────────
 function ToggleSwitch({
@@ -562,6 +684,34 @@ export default function Settings(): React.JSX.Element {
         </div>
       </section>
 
+      {/* ── Keyboard Shortcuts ──────────────────────────── */}
+      <section className="card p-5 mb-4">
+        <h2 className="text-sm font-semibold text-text-primary mb-1">Keyboard Shortcuts</h2>
+        <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.36)' }}>
+          Click Edit on any shortcut, then press your desired key combo to reassign it
+        </p>
+        <div className="space-y-4">
+          <KeybindingRow
+            label="Command Palette"
+            description="Quick navigation, task creation, agent switch"
+            bindingKey="palette"
+            accent={accentColor}
+          />
+          <KeybindingRow
+            label="Global Search"
+            description="Search across tasks, agents, documents, and chat"
+            bindingKey="search"
+            accent={accentColor}
+          />
+          <KeybindingRow
+            label="Shortcut Sheet"
+            description="Show all keyboard shortcuts overlay"
+            bindingKey="sheet"
+            accent={accentColor}
+          />
+        </div>
+      </section>
+
       {/* ── About ───────────────────────────────────────── */}
       <section className="card p-5">
         <h2 className="text-sm font-semibold text-text-primary mb-4">About</h2>
@@ -570,6 +720,9 @@ export default function Settings(): React.JSX.Element {
           <Row label="Version"    value="1.0.0" />
           <Row label="Model"      value="claude-sonnet-4-6" />
           <Row label="Built with" value="Electron · React · SQLite" />
+        </div>
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <UpdateButton accent={accentColor} />
         </div>
       </section>
     </div>
@@ -582,5 +735,55 @@ function Row({ label, value }: { label: string; value: string }): React.JSX.Elem
       <span className="text-sm" style={{ color: 'rgba(255,255,255,0.46)' }}>{label}</span>
       <span className="text-sm text-text-secondary">{value}</span>
     </div>
+  )
+}
+
+function UpdateButton({ accent }: { accent: string }): React.JSX.Element {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'available' | 'error'>('idle')
+
+  async function checkForUpdates(): Promise<void> {
+    setStatus('checking')
+    const result = await api.update.check()
+    if (result.status === 'dev-mode') {
+      setStatus('up-to-date')
+    } else if (result.status === 'checked' && result.version) {
+      setStatus('available')
+    } else if (result.status === 'checked') {
+      setStatus('up-to-date')
+    } else {
+      setStatus('error')
+    }
+    setTimeout(() => setStatus('idle'), 4000)
+  }
+
+  const label = status === 'checking'  ? 'Checking…'
+              : status === 'up-to-date' ? 'Up to date'
+              : status === 'available'  ? 'Update available!'
+              : status === 'error'      ? 'No update server configured'
+              : 'Check for Updates'
+
+  const color = status === 'available' ? '#34d399'
+              : status === 'error'     ? 'rgba(255,255,255,0.32)'
+              : accent
+
+  return (
+    <button
+      onClick={checkForUpdates}
+      disabled={status === 'checking'}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 7,
+        padding: '6px 14px',
+        background: `${color}14`,
+        border: `1px solid ${color}35`,
+        borderRadius: 8,
+        fontSize: 12,
+        color,
+        cursor: status === 'checking' ? 'default' : 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      <i className={`fa-solid ${status === 'checking' ? 'fa-spinner fa-spin' : status === 'available' ? 'fa-circle-check' : 'fa-arrow-rotate-right'}`} style={{ fontSize: 11 }} />
+      {label}
+    </button>
   )
 }

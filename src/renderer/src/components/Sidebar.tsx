@@ -20,11 +20,14 @@ const NAV_ITEMS: NavItemDef[] = [
   { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
   { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
   { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
+  { id: 'blueprint',    label: 'Blueprint',    icon: 'fa-solid fa-route' },
+  { id: 'devtools',     label: 'Dev Tools',    icon: 'fa-solid fa-code' },
 ]
 
 const SYSTEM_ITEMS: NavItemDef[] = [
-  { id: 'metrics',  label: 'API Manager', icon: 'fa-solid fa-chart-bar' },
-  { id: 'settings', label: 'Settings',    icon: 'fa-solid fa-gear' },
+  { id: 'metrics',   label: 'API Manager', icon: 'fa-solid fa-chart-bar' },
+  { id: 'providers', label: 'Providers',   icon: 'fa-solid fa-plug' },
+  { id: 'settings',  label: 'Settings',    icon: 'fa-solid fa-gear' },
 ]
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {

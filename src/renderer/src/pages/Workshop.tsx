@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { TokenEstimate } from '../env.d'
 import TaskCard from '../components/TaskCard'
 import StatusBadge from '../components/StatusBadge'
 import ActivityFeed from '../components/ActivityFeed'
@@ -238,10 +239,14 @@ function TaskDetail({
 }: TaskDetailProps): React.JSX.Element {
   const [running,  setRunning]  = useState(false)
   const [taskDocs, setTaskDocs] = useState<Document[]>([])
+  const [tokenEstimate, setTokenEstimate] = useState<TokenEstimate | null>(null)
   const assignedAgent = agents.find((a) => a.id === task.agent_id)
 
   useEffect(() => {
     api.documents.getByTask(task.id).then((docs) => setTaskDocs(docs as Document[]))
+    if (task.status === 'queued') {
+      api.tasks.estimateTokens(task.agent_id, task.title, task.description).then(setTokenEstimate)
+    }
   }, [task.id])
 
   async function handleStart(): Promise<void> {
@@ -306,6 +311,36 @@ function TaskDetail({
           <div className="text-sm text-text-primary">{assignedAgent?.name || '—'}</div>
         </div>
       </div>
+
+      {/* Token estimate (queued tasks only) */}
+      {tokenEstimate && task.status === 'queued' && (
+        <div
+          className="rounded-xl p-3 mb-4 flex items-start gap-3"
+          style={{ background: 'rgba(129,140,248,0.07)', border: '1px solid rgba(129,140,248,0.18)' }}
+        >
+          <i className="fa-solid fa-microchip text-accent mt-0.5 flex-shrink-0" style={{ fontSize: 13 }} />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-accent mb-2" style={{ letterSpacing: '0.05em' }}>ESTIMATED CONTEXT</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              {[
+                { label: 'System', value: tokenEstimate.systemTokens },
+                { label: 'Memory', value: tokenEstimate.memoryTokens },
+                { label: 'Task', value: tokenEstimate.taskTokens },
+                { label: 'Output budget', value: tokenEstimate.outputBudget },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-xs text-text-muted">{label}</span>
+                  <span className="text-xs tabular-nums" style={{ color: '#94a3b8' }}>~{value.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t mt-2 pt-2 flex justify-between" style={{ borderColor: 'rgba(129,140,248,0.15)' }}>
+              <span className="text-xs font-medium text-text-muted">Total</span>
+              <span className="text-xs font-semibold tabular-nums text-accent">~{tokenEstimate.total.toLocaleString()} tok</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       {(task.status === 'active' || liveProgress > 0) && (

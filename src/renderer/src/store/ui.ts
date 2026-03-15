@@ -65,6 +65,10 @@ interface UIStore {
   // Density
   density: 'comfortable' | 'compact'
   setDensity: (d: 'comfortable' | 'compact') => void
+
+  // Keyboard shortcuts (customizable)
+  keybindings: { palette: string; search: string; sheet: string }
+  setKeybinding: (name: 'palette' | 'search' | 'sheet', combo: string) => void
 }
 
 /**
@@ -152,6 +156,10 @@ export const useUIStore = create<UIStore>((set) => ({
     document.documentElement.setAttribute('data-density', d)
     set({ density: d })
   },
+
+  keybindings: { palette: 'cmd+k', search: 'cmd+shift+f', sheet: 'cmd+/' },
+  setKeybinding: (name, combo) =>
+    set((state) => ({ keybindings: { ...state.keybindings, [name]: combo } })),
 }))
 
 // Call anywhere outside React to fire a toast

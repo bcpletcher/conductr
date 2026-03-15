@@ -26,7 +26,7 @@ import {
   deleteInsight,
 } from '../db/intelligence'
 import { getDb } from '../db/schema'
-import { runClaude } from '../../api/claude'
+import { runWithRouter } from '../../api/router'
 
 export function registerDocumentHandlers(win: BrowserWindow): void {
 
@@ -110,9 +110,7 @@ export function registerDocumentHandlers(win: BrowserWindow): void {
     const now = new Date().toISOString()
 
     try {
-      const result = await runClaude({
-        systemPrompt,
-        userPrompt,
+      const result = await runWithRouter(systemPrompt, userPrompt, {
         maxTokens: type === 'recap' ? 2048 : 512,
         onChunk: (chunk) => {
           win.webContents.send('intelligence:chunk', { chunk })

@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import type { Components } from 'react-markdown'
 import mermaid from 'mermaid'
 
@@ -338,8 +341,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps): Re
   return (
     <div style={{ lineHeight: 1.65, fontSize: '0.875rem' }}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }]]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }], rehypeKatex]}
         components={components}
       >
         {content}
