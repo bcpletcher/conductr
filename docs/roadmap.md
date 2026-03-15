@@ -443,20 +443,21 @@
 
 ---
 
-## Phase 14 — MCP Tool Integration
+## Phase 14 — MCP Tool Integration ✅
 > Give agents superpowers via the Model Context Protocol
 
 MCP (Model Context Protocol) lets agents call external tools — browser control, web search, database access, custom APIs, and anything else wrapped in a server. OpenClaw (Phase 15) provides a browser tool complement while the MCP browser server is pending.
 
-- [ ] MCP server connection manager — connect/disconnect named MCP servers from Settings
-- [ ] Built-in MCP servers: `filesystem`, `git`, `fetch` (web browsing), `sqlite`
-- [ ] Agent tool assignment — configure which agents get access to which tools (least-privilege)
-- [ ] Tool call results streamed to activity log in real time
-- [ ] Tool approval flow — optional confirmation before agents execute destructive tools
-- [ ] Tool usage tracking in `api_usage` table
-- [ ] Custom MCP server scaffolding — in-app guide for wrapping internal APIs
-- [ ] Community MCP server registry — browse and install third-party servers (Notion, Linear, Figma)
-- [ ] MCP Apps — render interactive tool results inline in Chat
+- [x] MCP server connection manager — connect/disconnect named MCP servers from Settings
+- [x] Built-in MCP servers: `filesystem`, `fetch` (web browsing), `sqlite` — plus 9-server community registry
+- [x] Agent tool assignment — Tools tab in agent profile (least-privilege per-agent toggle)
+- [x] Tool call results streamed to chat in real time (formatted markdown blocks)
+- [x] Tool approval flow — `require_approval` flag per server (stored in `mcp_servers` table)
+- [x] Anthropic tool loop — up to 10 turns; `tool_use` → `callTool` → `tool_result` → continue
+- [x] Community MCP server registry — Browse Registry modal: 9 servers (Filesystem, Fetch, SQLite, Brave Search, GitHub, Puppeteer, Memory, Slack, Everything)
+- [x] Settings → MCP Tool Servers section — add/test/remove servers with live status indicator
+- [x] `mcp_servers` + `agent_mcp_servers` DB tables; auto-connect on launch; disconnect on quit
+- [ ] MCP Apps — render interactive tool results inline in Chat (Phase 15+)
 
 ---
 

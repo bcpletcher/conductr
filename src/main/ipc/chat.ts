@@ -146,13 +146,37 @@ export function registerChatHandlers(win: BrowserWindow): void {
       { role: 'user', content: currentUserContent },
     ]
 
+    // Load MCP tools assigned to this agent
+    let mcpTools: import('../../api/providers/types').RouteOptions['tools'] = undefined
+    try {
+      const db = (await import('../db/schema')).getDb()
+      const serverRows = db
+        .prepare('SELECT server_id FROM agent_mcp_servers WHERE agent_id = ?')
+        .all(agentId) as { server_id: string }[]
+      if (serverRows.length > 0) {
+        const serverIds = serverRows.map((r) => r.server_id)
+        const { getToolsForServers, toAnthropicTools } = await import('../../main/mcp/manager')
+        const tools = await getToolsForServers(serverIds)
+        if (tools.length > 0) mcpTools = toAnthropicTools(tools)
+      }
+    } catch {
+      // MCP tools optional — don't block chat on errors
+    }
+
     try {
       const result = await routeRequest({
         systemPrompt: fullSystemPrompt,
         messages: routeMessages,
         agentId,
+        tools: mcpTools,
         onChunk: (chunk) => {
           win.webContents.send('chat:chunk', { agentId, chunk })
+        },
+        onToolCall: (toolName, args) => {
+          win.webContents.send('chat:tool-call', { agentId, toolName, args })
+        },
+        onToolResult: (toolName, result, isError) => {
+          win.webContents.send('chat:tool-result', { agentId, toolName, result: result.slice(0, 500), isError })
         },
       })
 

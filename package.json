@@ -19,6 +19,7 @@
     "@electron-toolkit/utils": "^3.0.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@fortawesome/fontawesome-free": "^7.2.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@octokit/rest": "^22.0.1",
     "better-sqlite3": "^9.4.3",
     "diff": "^8.0.3",

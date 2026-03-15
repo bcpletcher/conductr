@@ -19,6 +19,8 @@ import { registerRepoHandlers } from './ipc/repos'
 import { registerTerminalHandlers } from './ipc/terminal'
 import { registerGitHandlers } from './ipc/git'
 import { registerGithubHandlers } from './ipc/github'
+import { registerMcpHandlers, initMcpConnections } from './ipc/mcp'
+import { disconnectAll } from './mcp/manager'
 import { createTray, destroyTray } from './tray'
 
 const isMac = process.platform === 'darwin'
@@ -238,6 +240,10 @@ app.whenReady().then(() => {
 
   registerGitHandlers()
   registerGithubHandlers()
+  registerMcpHandlers()
+
+  // Auto-connect enabled MCP servers after DB is ready
+  initMcpConnections().catch(console.error)
 
   // Test-only IPC: run a prompt through the LLM router without opening the UI
   if (process.env.NODE_ENV === 'test') {
@@ -248,7 +254,10 @@ app.whenReady().then(() => {
   }
 })
 
-app.on('before-quit', () => destroyTray())
+app.on('before-quit', () => {
+  destroyTray()
+  disconnectAll().catch(console.error)
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

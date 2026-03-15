@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Modal from '../components/Modal'
 import ActivityFeed from '../components/ActivityFeed'
-import type { Agent, AgentFile, AgentMemory, SkillSummary, ActivityLogEntry, Task } from '../env.d'
+import type { Agent, AgentFile, AgentMemory, SkillSummary, ActivityLogEntry, Task, McpServer, McpTool } from '../env.d'
 import { AGENT_AVATARS, getAgentColor } from '../assets/agents'
 
 const api = window.electronAPI
@@ -182,7 +182,7 @@ interface AgentProfileProps {
   onEdit: () => void
 }
 
-type ProfileTab = 'profile' | 'files' | 'activity' | 'memory'
+type ProfileTab = 'profile' | 'files' | 'activity' | 'memory' | 'tools'
 
 const SKILL_LEVEL_COLOR: Record<string, string> = {
   master:       '#f59e0b',
@@ -206,6 +206,11 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
   const [memoryDomainFilter, setMemoryDomainFilter] = useState<string>('')
   const [hardeningStatus, setHardeningStatus] = useState<string>('')
   const [memoryCount, setMemoryCount] = useState(0)
+  const [allServers, setAllServers] = useState<McpServer[]>([])
+  const [agentServerIds, setAgentServerIds] = useState<string[]>([])
+  const [expandedServer, setExpandedServer] = useState<string | null>(null)
+  const [serverTools, setServerTools] = useState<Record<string, McpTool[]>>({})
+  const [savingTools, setSavingTools] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const shortRole = agent.operational_role?.split('.')[0]?.split(',')[0]?.trim() ?? ''
 
@@ -223,6 +228,33 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
     setMemories(mems)
     setSkillSummaries(skills)
     setMemoryCount(count)
+  }
+
+  async function loadTools(): Promise<void> {
+    const [servers, assigned] = await Promise.all([
+      api.mcp.listServers(),
+      api.mcp.getAgentServers(agent.id),
+    ])
+    setAllServers(servers)
+    setAgentServerIds(assigned)
+    setServerTools({})
+  }
+
+  async function toggleServer(serverId: string): Promise<void> {
+    const newIds = agentServerIds.includes(serverId)
+      ? agentServerIds.filter(id => id !== serverId)
+      : [...agentServerIds, serverId]
+    setAgentServerIds(newIds)
+    setSavingTools(true)
+    await api.mcp.setAgentServers(agent.id, newIds).catch(() => {})
+    setSavingTools(false)
+  }
+
+  async function loadServerTools(serverId: string): Promise<void> {
+    if (serverTools[serverId]) { setExpandedServer(expandedServer === serverId ? null : serverId); return }
+    const tools = await api.mcp.listTools(serverId).catch(() => [] as McpTool[])
+    setServerTools(prev => ({ ...prev, [serverId]: tools }))
+    setExpandedServer(serverId)
   }
 
   useEffect(() => {
@@ -392,10 +424,14 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
 
         {/* Sub-tab bar */}
         <div style={{ display: 'flex', gap: 2 }}>
-          {(['profile', 'files', 'activity', 'memory'] as ProfileTab[]).map(tab => (
+          {(['profile', 'files', 'activity', 'memory', 'tools'] as ProfileTab[]).map(tab => (
             <button
               key={tab}
-              onClick={() => { setProfileTab(tab); setEditingFile(null); if (tab === 'memory') loadMemories().catch(() => {}) }}
+              onClick={() => {
+                setProfileTab(tab); setEditingFile(null)
+                if (tab === 'memory') loadMemories().catch(() => {})
+                if (tab === 'tools') loadTools().catch(() => {})
+              }}
               style={{
                 padding: '7px 14px', fontSize: 12,
                 fontWeight: profileTab === tab ? 600 : 400,
@@ -410,7 +446,9 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                 ? `Files ${initializedCount}/${STANDARD_FILES.length}`
                 : tab === 'memory'
                   ? `Memory${memoryCount > 0 ? ` ${memoryCount}` : ''}`
-                  : tab.charAt(0).toUpperCase() + tab.slice(1)
+                  : tab === 'tools'
+                    ? `Tools${agentServerIds.length > 0 ? ` ${agentServerIds.length}` : ''}`
+                    : tab.charAt(0).toUpperCase() + tab.slice(1)
               }
             </button>
           ))}
@@ -796,6 +834,115 @@ function AgentProfile({ agent, activeTasks, onEdit }: AgentProfileProps): React.
                       </div>
                     )
                   })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tools tab */}
+        {profileTab === 'tools' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <SectionLabel icon="fa-solid fa-plug-circle-bolt">MCP Tool Servers</SectionLabel>
+              {savingTools && (
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)' }}>
+                  <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: 5 }} />Saving…
+                </span>
+              )}
+            </div>
+
+            {allServers.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '36px 20px',
+                background: 'rgba(255,255,255,0.025)', borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <i className="fa-solid fa-plug" style={{ fontSize: 24, color: 'rgba(255,255,255,0.18)', marginBottom: 10, display: 'block' }} />
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.36)', marginBottom: 6 }}>No MCP servers configured</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)' }}>
+                  Add servers in Settings → Tools to give this agent new capabilities.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {allServers.map(server => {
+                  const isAssigned = agentServerIds.includes(server.id)
+                  const isConnected = server.status?.status === 'connected'
+                  const tools = serverTools[server.id]
+                  const isExpanded = expandedServer === server.id
+                  return (
+                    <div key={server.id} style={{
+                      borderRadius: 10, overflow: 'hidden',
+                      border: `1px solid ${isAssigned ? `${accent}44` : 'rgba(255,255,255,0.06)'}`,
+                      background: isAssigned ? `${accent}0a` : 'rgba(255,255,255,0.025)',
+                      transition: 'all 0.15s',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
+                        {/* Toggle checkbox */}
+                        <button
+                          onClick={() => toggleServer(server.id)}
+                          style={{
+                            width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                            background: isAssigned ? accent : 'rgba(255,255,255,0.08)',
+                            border: `1.5px solid ${isAssigned ? accent : 'rgba(255,255,255,0.15)'}`,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {isAssigned && <i className="fa-solid fa-check" style={{ fontSize: 9, color: '#08080d' }} />}
+                        </button>
+                        {/* Status dot */}
+                        <div style={{
+                          width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                          background: isConnected ? '#34d399' : server.status?.status === 'error' ? '#f87171' : 'rgba(255,255,255,0.18)',
+                        }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#f1f5f9' }}>{server.name}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', marginTop: 2 }}>
+                            {server.type === 'stdio' ? server.command : server.url}
+                            {isConnected && server.status?.toolCount > 0 && (
+                              <span style={{ marginLeft: 8, color: accent }}>{server.status.toolCount} tools</span>
+                            )}
+                            {server.status?.status === 'error' && (
+                              <span style={{ marginLeft: 8, color: '#f87171' }}>Connection error</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Expand tools button */}
+                        {isConnected && (
+                          <button
+                            onClick={() => loadServerTools(server.id)}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              color: 'rgba(255,255,255,0.36)', fontSize: 11, padding: '2px 6px',
+                            }}
+                          >
+                            <i className={`fa-solid fa-chevron-${isExpanded ? 'up' : 'down'}`} style={{ fontSize: 10 }} />
+                          </button>
+                        )}
+                      </div>
+                      {/* Expanded tools list */}
+                      {isExpanded && tools && tools.length > 0 && (
+                        <div style={{
+                          borderTop: '1px solid rgba(255,255,255,0.06)',
+                          padding: '8px 14px 10px', display: 'flex', flexDirection: 'column', gap: 6,
+                        }}>
+                          {tools.map(tool => (
+                            <div key={tool.name} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                              <i className="fa-solid fa-screwdriver-wrench" style={{ fontSize: 10, color: accent, marginTop: 3, flexShrink: 0 }} />
+                              <div>
+                                <code style={{ fontSize: 11, color: '#f1f5f9', fontFamily: 'monospace' }}>{tool.name.replace(`${server.id}__`, '')}</code>
+                                {tool.description && (
+                                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', marginTop: 1 }}>{tool.description.replace(`[${server.name}] `, '')}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

@@ -78,10 +78,16 @@ const api = {
       ipcRenderer.on('chat:done', (_e, data) => cb(data)),
     onError: (cb: (data: { agentId: string; error: string }) => void) =>
       ipcRenderer.on('chat:error', (_e, data) => cb(data)),
+    onToolCall: (cb: (data: { agentId: string; toolName: string; args: unknown }) => void) =>
+      ipcRenderer.on('chat:tool-call', (_e, data) => cb(data)),
+    onToolResult: (cb: (data: { agentId: string; toolName: string; result: string; isError: boolean }) => void) =>
+      ipcRenderer.on('chat:tool-result', (_e, data) => cb(data)),
     removeAllListeners: () => {
       ipcRenderer.removeAllListeners('chat:chunk')
       ipcRenderer.removeAllListeners('chat:done')
       ipcRenderer.removeAllListeners('chat:error')
+      ipcRenderer.removeAllListeners('chat:tool-call')
+      ipcRenderer.removeAllListeners('chat:tool-result')
     }
   },
 
@@ -332,6 +338,33 @@ const api = {
       ipcRenderer.invoke('github:createPR', opts),
     getPRs: (remoteUrl: string) => ipcRenderer.invoke('github:getPRs', remoteUrl),
     getRepoInfo: (remoteUrl: string) => ipcRenderer.invoke('github:getRepoInfo', remoteUrl),
+  },
+
+  // MCP Tool Integration (Phase 14)
+  mcp: {
+    listServers: () => ipcRenderer.invoke('mcp:listServers'),
+    addServer: (input: {
+      name: string
+      type: 'stdio' | 'sse'
+      command?: string
+      args?: string[]
+      url?: string
+      env?: Record<string, string>
+      requireApproval?: boolean
+    }) => ipcRenderer.invoke('mcp:addServer', input),
+    removeServer: (id: string) => ipcRenderer.invoke('mcp:removeServer', id),
+    updateServer: (id: string, updates: Record<string, unknown>) =>
+      ipcRenderer.invoke('mcp:updateServer', id, updates),
+    testConnection: (config: Record<string, unknown>) =>
+      ipcRenderer.invoke('mcp:testConnection', config),
+    reconnect: (id: string) => ipcRenderer.invoke('mcp:reconnect', id),
+    listTools: (serverId: string) => ipcRenderer.invoke('mcp:listTools', serverId),
+    getAgentTools: (serverIds: string[]) => ipcRenderer.invoke('mcp:getAgentTools', serverIds),
+    getAgentServers: (agentId: string) => ipcRenderer.invoke('mcp:getAgentServers', agentId),
+    setAgentServers: (agentId: string, serverIds: string[]) =>
+      ipcRenderer.invoke('mcp:setAgentServers', agentId, serverIds),
+    getRegistry: () => ipcRenderer.invoke('mcp:getRegistry'),
+    getStatuses: () => ipcRenderer.invoke('mcp:getStatuses'),
   },
 
   // Intelligence

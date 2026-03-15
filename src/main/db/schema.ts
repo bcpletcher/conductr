@@ -322,6 +322,30 @@ function createTables(db: Database.Database): void {
       created_at TEXT NOT NULL
     );
   `)
+
+  // Phase 14: MCP server configurations
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mcp_servers (
+      id               TEXT PRIMARY KEY,
+      name             TEXT NOT NULL,
+      type             TEXT NOT NULL DEFAULT 'stdio',
+      command          TEXT,
+      args             TEXT DEFAULT '[]',
+      url              TEXT,
+      env              TEXT DEFAULT '{}',
+      require_approval INTEGER DEFAULT 0,
+      enabled          INTEGER DEFAULT 1,
+      created_at       TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS agent_mcp_servers (
+      agent_id  TEXT NOT NULL,
+      server_id TEXT NOT NULL,
+      PRIMARY KEY (agent_id, server_id),
+      FOREIGN KEY (agent_id)  REFERENCES agents(id) ON DELETE CASCADE,
+      FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE
+    );
+  `)
 }
 
 const DEFAULT_AGENTS = [

@@ -153,9 +153,10 @@ export async function routeRequest(options: RouteOptions): Promise<RouteResult> 
     const { getAnthropicClient } = await import('./claude')
     const anthropic = getAnthropicClient()
 
-    // Build Anthropic-format messages
     type AnthMessageParam = Parameters<typeof anthropic.messages.stream>[0]['messages'][number]
-    const anthMessages: AnthMessageParam[] = options.messages.map((m) => ({
+
+    // Helper: convert ChatMessage → Anthropic message param
+    const toAnthParam = (m: import('./providers/types').ChatMessage): AnthMessageParam => ({
       role: m.role,
       content:
         typeof m.content === 'string'
@@ -178,40 +179,132 @@ export async function routeRequest(options: RouteOptions): Promise<RouteResult> 
               }
               return { type: 'text' as const, text: '' }
             }),
-    }))
-
-    const systemBlock = options.cacheSystem
-      ? [
-          {
-            type: 'text' as const,
-            text: options.systemPrompt,
-            cache_control: { type: 'ephemeral' as const },
-          },
-        ]
-      : options.systemPrompt
-
-    let fullContent = ''
-    const stream = anthropic.messages.stream({
-      model,
-      max_tokens: maxTokens,
-      system: systemBlock,
-      messages: anthMessages,
     })
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        fullContent += event.delta.text
-        options.onChunk?.(event.delta.text)
+    const systemBlock = options.cacheSystem
+      ? [{ type: 'text' as const, text: options.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
+      : options.systemPrompt
+
+    // Anthropic tool format (from MCP)
+    type AnthTool = { name: string; description: string; input_schema: Record<string, unknown> }
+    const anthTools: AnthTool[] | undefined = options.tools?.map((t) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.input_schema as Record<string, unknown>,
+    }))
+
+    // Accumulate messages for the tool loop (mutable copy)
+    const loopMessages: AnthMessageParam[] = options.messages.map(toAnthParam)
+    let fullContent = ''
+    let totalInputTokens = 0
+    let totalOutputTokens = 0
+
+    // Tool loop: keep calling until stop_reason === 'end_turn' or no tools
+    for (let turn = 0; turn < 10; turn++) {
+      const hasTools = anthTools && anthTools.length > 0
+
+      if (turn === 0 || !hasTools) {
+        // Stream first (or only) turn
+        const stream = anthropic.messages.stream({
+          model,
+          max_tokens: maxTokens,
+          system: systemBlock,
+          messages: loopMessages,
+          ...(hasTools ? { tools: anthTools } : {}),
+        })
+
+        for await (const event of stream) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            fullContent += event.delta.text
+            options.onChunk?.(event.delta.text)
+          }
+        }
+
+        const finalMsg = await stream.finalMessage()
+        totalInputTokens += finalMsg.usage.input_tokens
+        totalOutputTokens += finalMsg.usage.output_tokens
+
+        if (finalMsg.stop_reason !== 'tool_use' || !hasTools) break
+
+        // Handle tool_use: extract blocks, call tools, push results
+        const toolUseBlocks = finalMsg.content.filter((b) => b.type === 'tool_use') as
+          { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }[]
+
+        // Add assistant turn with tool_use blocks to loop
+        loopMessages.push({ role: 'assistant', content: finalMsg.content as AnthMessageParam['content'] })
+
+        // Call tools and build tool_result user turn
+        const toolResults: { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }[] = []
+        for (const block of toolUseBlocks) {
+          options.onToolCall?.(block.name, block.input)
+          // Emit formatted tool call into the stream
+          options.onChunk?.(`\n\n**[Tool Call]** \`${block.name}\`\n\`\`\`json\n${JSON.stringify(block.input, null, 2)}\n\`\`\`\n`)
+
+          try {
+            const { callTool } = await import('../main/mcp/manager')
+            const result = await callTool(block.name, block.input)
+            options.onToolResult?.(block.name, result, false)
+            options.onChunk?.(`\n**[Tool Result]**\n\`\`\`\n${result.slice(0, 2000)}\n\`\`\`\n\n`)
+            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result })
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err)
+            options.onToolResult?.(block.name, errMsg, true)
+            options.onChunk?.(`\n**[Tool Error]** ${errMsg}\n\n`)
+            toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: errMsg, is_error: true })
+          }
+        }
+        loopMessages.push({ role: 'user', content: toolResults })
+        continue  // next turn
       }
+
+      // Non-first turns (after tool results): non-streaming intermediate call
+      const resp = await anthropic.messages.create({
+        model,
+        max_tokens: maxTokens,
+        system: systemBlock,
+        messages: loopMessages,
+        tools: anthTools,
+      })
+      totalInputTokens += resp.usage.input_tokens
+      totalOutputTokens += resp.usage.output_tokens
+
+      const textBlocks = resp.content.filter((b) => b.type === 'text') as { type: 'text'; text: string }[]
+      for (const b of textBlocks) {
+        fullContent += b.text
+        options.onChunk?.(b.text)
+      }
+
+      if (resp.stop_reason !== 'tool_use') break
+
+      const toolUseBlocks = resp.content.filter((b) => b.type === 'tool_use') as
+        { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }[]
+
+      loopMessages.push({ role: 'assistant', content: resp.content as AnthMessageParam['content'] })
+
+      const toolResults: { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }[] = []
+      for (const block of toolUseBlocks) {
+        options.onToolCall?.(block.name, block.input)
+        options.onChunk?.(`\n\n**[Tool Call]** \`${block.name}\`\n\`\`\`json\n${JSON.stringify(block.input, null, 2)}\n\`\`\`\n`)
+        try {
+          const { callTool } = await import('../main/mcp/manager')
+          const result = await callTool(block.name, block.input)
+          options.onToolResult?.(block.name, result, false)
+          options.onChunk?.(`\n**[Tool Result]**\n\`\`\`\n${result.slice(0, 2000)}\n\`\`\`\n\n`)
+          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result })
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err)
+          options.onToolResult?.(block.name, errMsg, true)
+          options.onChunk?.(`\n**[Tool Error]** ${errMsg}\n\n`)
+          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: errMsg, is_error: true })
+        }
+      }
+      loopMessages.push({ role: 'user', content: toolResults })
     }
 
-    const finalMsg = await stream.finalMessage()
-    const inputTokens = finalMsg.usage.input_tokens
-    const outputTokens = finalMsg.usage.output_tokens
     const costs = getCostForModel(model)
-    const costUsd = (inputTokens / 1000) * costs.input + (outputTokens / 1000) * costs.output
+    const costUsd = (totalInputTokens / 1000) * costs.input + (totalOutputTokens / 1000) * costs.output
 
-    return { content: fullContent, model, provider, inputTokens, outputTokens, costUsd }
+    return { content: fullContent, model, provider, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd }
   }
 
   // ── OpenAI-compatible providers (openrouter, openai, groq, ollama) ─────────

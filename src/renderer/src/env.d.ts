@@ -3,6 +3,50 @@
 // Mission Control design token types
 export type TaskStatus = 'queued' | 'active' | 'complete' | 'failed'
 
+// MCP types (Phase 14)
+export type McpConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error'
+
+export interface McpServerStatus {
+  serverId: string
+  status: McpConnectionStatus
+  toolCount: number
+  error?: string
+}
+
+export interface McpServer {
+  id: string
+  name: string
+  type: 'stdio' | 'sse'
+  command?: string
+  args?: string[]
+  url?: string
+  env?: Record<string, string>
+  requireApproval: boolean
+  enabled: boolean
+  createdAt: string
+  status: McpServerStatus
+}
+
+export interface McpTool {
+  name: string
+  description?: string
+  inputSchema: Record<string, unknown>
+  serverId: string
+  serverName: string
+}
+
+export interface McpRegistryEntry {
+  id: string
+  name: string
+  description: string
+  category: string
+  command: string
+  args?: string[]
+  installCmd?: string
+  requiresKey?: string
+  homepageUrl?: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -509,6 +553,28 @@ declare global {
         createPR: (opts: { remoteUrl: string; head: string; base: string; title: string; body: string; issueNumber?: number }) => Promise<{ ok: boolean; url?: string; number?: number; error?: string }>
         getPRs: (remoteUrl: string) => Promise<GithubPR[] | { error: string }>
         getRepoInfo: (remoteUrl: string) => Promise<{ name: string; fullName: string; description: string | null; defaultBranch: string; isPrivate: boolean; stars: number; url: string } | null>
+      }
+      mcp: {
+        listServers: () => Promise<McpServer[]>
+        addServer: (input: {
+          name: string
+          type: 'stdio' | 'sse'
+          command?: string
+          args?: string[]
+          url?: string
+          env?: Record<string, string>
+          requireApproval?: boolean
+        }) => Promise<McpServer>
+        removeServer: (id: string) => Promise<{ ok: boolean }>
+        updateServer: (id: string, updates: Record<string, unknown>) => Promise<McpServer>
+        testConnection: (config: Record<string, unknown>) => Promise<McpServerStatus>
+        reconnect: (id: string) => Promise<McpServerStatus>
+        listTools: (serverId: string) => Promise<McpTool[]>
+        getAgentTools: (serverIds: string[]) => Promise<McpTool[]>
+        getAgentServers: (agentId: string) => Promise<string[]>
+        setAgentServers: (agentId: string, serverIds: string[]) => Promise<{ ok: boolean }>
+        getRegistry: () => Promise<McpRegistryEntry[]>
+        getStatuses: () => Promise<McpServerStatus[]>
       }
       providers: {
         getStatus: () => Promise<ProviderStatus[]>

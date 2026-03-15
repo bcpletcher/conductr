@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useUIStore } from '../store/ui'
 import { WALLPAPER_PRESETS } from '../constants/wallpapers'
+import type { McpServer, McpRegistryEntry } from '../env.d'
 
 const api = window.electronAPI
 
@@ -223,6 +224,18 @@ export default function Settings(): React.JSX.Element {
   const [saving, setSaving]    = useState(false)
   const [saved,  setSaved]     = useState(false)
 
+  // MCP Servers state
+  const [mcpServers, setMcpServers] = useState<McpServer[]>([])
+  const [mcpRegistry, setMcpRegistry] = useState<McpRegistryEntry[]>([])
+  const [showRegistryModal, setShowRegistryModal] = useState(false)
+  const [addServerForm, setAddServerForm] = useState<{
+    name: string; type: 'stdio' | 'sse'; command: string; args: string; url: string
+  }>({ name: '', type: 'stdio', command: '', args: '', url: '' })
+  const [addingServer, setAddingServer] = useState(false)
+  const [testingServer, setTestingServer] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
+  const [mcpError, setMcpError] = useState('')
+
   // Notification preferences
   const [notifMode,          setNotifMode]          = useState<'always' | 'background' | 'never'>('always')
   const [notifTaskComplete,  setNotifTaskComplete]  = useState(true)
@@ -261,6 +274,8 @@ export default function Settings(): React.JSX.Element {
     api.settings.get('notif_budget_alert').then((val) => {
       if (val !== null) setNotifBudgetAlert(val === '1')
     })
+    api.mcp.listServers().then(setMcpServers).catch(() => {})
+    api.mcp.getRegistry().then(setMcpRegistry).catch(() => {})
   }, [setWallpaperBrightness, setAccentColor, setDensity, setWallpaperStyle, setCustomWallpaperPath])
 
   // setAccentColor (from store) sets all CSS vars automatically — no manual setProperty needed
@@ -301,6 +316,60 @@ export default function Settings(): React.JSX.Element {
   ): Promise<void> {
     setter(value)
     await api.settings.set(key, value ? '1' : '0')
+  }
+
+  async function handleAddServer(): Promise<void> {
+    if (!addServerForm.name.trim()) { setMcpError('Name is required.'); return }
+    if (addServerForm.type === 'stdio' && !addServerForm.command.trim()) { setMcpError('Command is required for stdio.'); return }
+    if (addServerForm.type === 'sse' && !addServerForm.url.trim()) { setMcpError('URL is required for SSE.'); return }
+    setMcpError('')
+    setAddingServer(true)
+    try {
+      const args = addServerForm.args.trim()
+        ? addServerForm.args.split(/\s+/).filter(Boolean)
+        : []
+      const server = await api.mcp.addServer({
+        name: addServerForm.name.trim(),
+        type: addServerForm.type,
+        command: addServerForm.type === 'stdio' ? addServerForm.command.trim() : undefined,
+        args: addServerForm.type === 'stdio' ? args : undefined,
+        url: addServerForm.type === 'sse' ? addServerForm.url.trim() : undefined,
+      })
+      setMcpServers(prev => [...prev, server])
+      setAddServerForm({ name: '', type: 'stdio', command: '', args: '', url: '' })
+    } catch (err) {
+      setMcpError(err instanceof Error ? err.message : 'Failed to add server.')
+    }
+    setAddingServer(false)
+  }
+
+  async function handleRemoveServer(id: string): Promise<void> {
+    await api.mcp.removeServer(id).catch(() => {})
+    setMcpServers(prev => prev.filter(s => s.id !== id))
+  }
+
+  async function handleTestServer(id: string): Promise<void> {
+    setTestingServer(id)
+    setTestResult(null)
+    const status = await api.mcp.reconnect(id).catch(() => ({ status: 'error', toolCount: 0, error: 'Failed' }))
+    setMcpServers(prev => prev.map(s => s.id === id ? { ...s, status } : s))
+    setTestResult({
+      id,
+      ok: status.status === 'connected',
+      msg: status.status === 'connected' ? `Connected — ${status.toolCount} tools available` : (status.error ?? 'Connection failed'),
+    })
+    setTestingServer(null)
+  }
+
+  function handleQuickInstall(entry: McpRegistryEntry): void {
+    setAddServerForm({
+      name: entry.name,
+      type: 'stdio',
+      command: entry.command,
+      args: (entry.args ?? []).join(' '),
+      url: '',
+    })
+    setShowRegistryModal(false)
   }
 
   async function handlePickCustomWallpaper(): Promise<void> {
@@ -711,6 +780,253 @@ export default function Settings(): React.JSX.Element {
           />
         </div>
       </section>
+
+      {/* ── MCP Tool Servers ────────────────────────────── */}
+      <section className="card p-5 mb-4">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-sm font-semibold text-text-primary">MCP Tool Servers</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.36)' }}>
+              Connect agents to external tools — filesystem, web, databases, APIs, and more.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRegistryModal(true)}
+            className="text-xs px-3 py-1.5 rounded-lg"
+            style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}40`, color: accentColor, cursor: 'pointer' }}
+          >
+            <i className="fa-solid fa-store mr-1.5" />Browse Registry
+          </button>
+        </div>
+
+        {/* Configured servers */}
+        {mcpServers.length > 0 && (
+          <div className="mb-4" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {mcpServers.map(server => {
+              const st = server.status
+              const isConnected = st?.status === 'connected'
+              const isError = st?.status === 'error'
+              const isTesting = testingServer === server.id
+              const result = testResult?.id === server.id ? testResult : null
+              return (
+                <div key={server.id} style={{
+                  padding: '11px 14px', borderRadius: 10,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%', marginTop: 4, flexShrink: 0,
+                    background: isConnected ? '#34d399' : isError ? '#f87171' : isTesting ? accentColor : 'rgba(255,255,255,0.18)',
+                  }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="text-sm text-text-primary font-medium">{server.name}</span>
+                      <span style={{
+                        fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                        background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.44)',
+                      }}>{server.type}</span>
+                      {isConnected && (
+                        <span style={{ fontSize: 10, color: '#34d399' }}>{st.toolCount} tool{st.toolCount !== 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', marginTop: 2, fontFamily: 'monospace' }}>
+                      {server.type === 'stdio' ? `${server.command} ${(server.args ?? []).join(' ')}` : server.url}
+                    </div>
+                    {result && (
+                      <div style={{ fontSize: 11, marginTop: 4, color: result.ok ? '#34d399' : '#f87171' }}>
+                        <i className={`fa-solid ${result.ok ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1`} />{result.msg}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => handleTestServer(server.id)}
+                      disabled={isTesting}
+                      style={{
+                        padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'rgba(255,255,255,0.56)',
+                      }}
+                    >
+                      {isTesting ? <i className="fa-solid fa-circle-notch fa-spin" /> : 'Test'}
+                    </button>
+                    <button
+                      onClick={() => handleRemoveServer(server.id)}
+                      style={{
+                        padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                        background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)',
+                        color: '#f87171',
+                      }}
+                    >
+                      <i className="fa-solid fa-trash-can" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Add server form */}
+        <div style={{
+          padding: '14px', borderRadius: 10,
+          background: 'rgba(255,255,255,0.025)', border: '1px dashed rgba(255,255,255,0.1)',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.44)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Add Server
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+            <input
+              value={addServerForm.name}
+              onChange={e => setAddServerForm(p => ({ ...p, name: e.target.value }))}
+              placeholder="Name (e.g. Filesystem)"
+              style={{
+                padding: '7px 10px', borderRadius: 7, fontSize: 12,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#f1f5f9', outline: 'none',
+              }}
+            />
+            <select
+              value={addServerForm.type}
+              onChange={e => setAddServerForm(p => ({ ...p, type: e.target.value as 'stdio' | 'sse' }))}
+              style={{
+                padding: '7px 10px', borderRadius: 7, fontSize: 12,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#f1f5f9', outline: 'none',
+              }}
+            >
+              <option value="stdio">stdio (local process)</option>
+              <option value="sse">SSE (HTTP endpoint)</option>
+            </select>
+          </div>
+          {addServerForm.type === 'stdio' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <input
+                value={addServerForm.command}
+                onChange={e => setAddServerForm(p => ({ ...p, command: e.target.value }))}
+                placeholder="Command (e.g. npx)"
+                style={{
+                  padding: '7px 10px', borderRadius: 7, fontSize: 12,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#f1f5f9', outline: 'none', fontFamily: 'monospace',
+                }}
+              />
+              <input
+                value={addServerForm.args}
+                onChange={e => setAddServerForm(p => ({ ...p, args: e.target.value }))}
+                placeholder="Arguments (e.g. -y @mcp/server-fetch)"
+                style={{
+                  padding: '7px 10px', borderRadius: 7, fontSize: 12,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#f1f5f9', outline: 'none', fontFamily: 'monospace',
+                }}
+              />
+            </div>
+          ) : (
+            <input
+              value={addServerForm.url}
+              onChange={e => setAddServerForm(p => ({ ...p, url: e.target.value }))}
+              placeholder="URL (e.g. http://localhost:3000/sse)"
+              style={{
+                width: '100%', padding: '7px 10px', borderRadius: 7, fontSize: 12, marginBottom: 8,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#f1f5f9', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box',
+              }}
+            />
+          )}
+          {mcpError && (
+            <div style={{ fontSize: 11, color: '#f87171', marginBottom: 8 }}>
+              <i className="fa-solid fa-circle-xmark mr-1" />{mcpError}
+            </div>
+          )}
+          <button
+            onClick={handleAddServer}
+            disabled={addingServer}
+            style={{
+              padding: '7px 16px', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              background: `${accentColor}18`, border: `1px solid ${accentColor}40`, color: accentColor,
+            }}
+          >
+            {addingServer ? <><i className="fa-solid fa-circle-notch fa-spin mr-1.5" />Connecting…</> : <><i className="fa-solid fa-plus mr-1.5" />Add & Connect</>}
+          </button>
+        </div>
+      </section>
+
+      {/* Registry Modal */}
+      {showRegistryModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setShowRegistryModal(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: 640, maxHeight: '80vh', borderRadius: 16, overflow: 'hidden',
+              background: 'rgba(12,12,20,0.96)', border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex', flexDirection: 'column',
+            }}
+          >
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>MCP Server Registry</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.36)', marginTop: 2 }}>Popular community servers — click to pre-fill the add form</div>
+              </div>
+              <button onClick={() => setShowRegistryModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.44)', fontSize: 16 }}>
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(
+                mcpRegistry.reduce<Record<string, McpRegistryEntry[]>>((acc, entry) => {
+                  ;(acc[entry.category] ??= []).push(entry)
+                  return acc
+                }, {})
+              ).map(([category, entries]) => (
+                <div key={category}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', marginBottom: 6, marginTop: 4 }}>
+                    {category}
+                  </div>
+                  {entries.map(entry => (
+                    <button
+                      key={entry.id}
+                      onClick={() => handleQuickInstall(entry)}
+                      style={{
+                        display: 'flex', width: '100%', alignItems: 'flex-start', gap: 12,
+                        padding: '11px 12px', borderRadius: 9, marginBottom: 4, cursor: 'pointer',
+                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                        textAlign: 'left', transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = `${accentColor}10`)}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                    >
+                      <i className="fa-solid fa-plug" style={{ fontSize: 14, color: accentColor, marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {entry.name}
+                          {entry.requiresKey && (
+                            <span style={{ fontSize: 10, color: '#fbbf24', background: 'rgba(251,191,36,0.1)', padding: '1px 6px', borderRadius: 4 }}>
+                              requires API key
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)', marginTop: 2 }}>{entry.description}</div>
+                        <code style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', fontFamily: 'monospace', marginTop: 3, display: 'block' }}>
+                          {entry.command} {(entry.args ?? []).join(' ')}
+                        </code>
+                      </div>
+                      <i className="fa-solid fa-arrow-right" style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', marginTop: 4, flexShrink: 0 }} />
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── About ───────────────────────────────────────── */}
       <section className="card p-5">

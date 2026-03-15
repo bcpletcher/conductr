@@ -23,6 +23,10 @@ export interface RouteOptions {
   onChunk?: (text: string) => void
   /** Wrap system prompt in cache_control for repeated calls (Anthropic only) */
   cacheSystem?: boolean
+  /** MCP tools to make available (Anthropic-format definitions + call dispatcher) */
+  tools?: import('../../main/mcp/types').AnthropicToolDef[]
+  onToolCall?: (toolName: string, args: Record<string, unknown>) => void
+  onToolResult?: (toolName: string, result: string, isError: boolean) => void
 }
 
 export interface RouteResult {
