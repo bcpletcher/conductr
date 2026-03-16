@@ -11,30 +11,41 @@ interface SidebarProps {
 
 type NavItemDef = { id: NavPage; label: string; icon: string }
 
-const NAV_ITEMS: NavItemDef[] = [
+// ── Workspace: daily-use core pages ────────────────────────────────────────
+const CORE_ITEMS: NavItemDef[] = [
   { id: 'dashboard',    label: 'Dashboard',    icon: 'fa-solid fa-house' },
-  { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
+  { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
+  { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
+]
+
+// ── Content: knowledge, documents, clients ──────────────────────────────────
+const CONTENT_ITEMS: NavItemDef[] = [
   { id: 'documents',    label: 'Documents',    icon: 'fa-solid fa-file-lines' },
-  { id: 'agents',       label: 'Agents',       icon: 'fa-solid fa-robot' },
+  { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
   { id: 'intelligence', label: 'Intelligence', icon: 'fa-solid fa-brain' },
   { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
-  { id: 'workshop',     label: 'Workshop',     icon: 'fa-solid fa-gears' },
-  { id: 'chat',         label: 'Chat',         icon: 'fa-solid fa-message' },
-  { id: 'blueprint',    label: 'Storyboard',   icon: 'fa-solid fa-film' },
+  { id: 'guide',        label: 'Guide',        icon: 'fa-solid fa-book-open' },
+]
+
+// ── Platform: agents, integrations, tools ───────────────────────────────────
+const PLATFORM_ITEMS: NavItemDef[] = [
+  { id: 'agents',       label: 'Agents',       icon: 'fa-solid fa-robot' },
   { id: 'channels',     label: 'Channels',     icon: 'fa-solid fa-tower-broadcast' },
-  { id: 'pipelines',    label: 'Pipelines',    icon: 'fa-solid fa-diagram-project' },
   { id: 'devtools',     label: 'Dev Tools',    icon: 'fa-solid fa-code' },
+  { id: 'blueprint',    label: 'Storyboard',   icon: 'fa-solid fa-film' },
 ]
 
+// ── System/utilities (below divider) ────────────────────────────────────────
 const SYSTEM_ITEMS: NavItemDef[] = [
-  { id: 'metrics',   label: 'API Manager', icon: 'fa-solid fa-chart-bar' },
-  { id: 'providers', label: 'Providers',   icon: 'fa-solid fa-plug' },
-  { id: 'settings',  label: 'Settings',    icon: 'fa-solid fa-gear' },
+  { id: 'pipelines',    label: 'Pipelines',    icon: 'fa-solid fa-diagram-project' },
+  { id: 'metrics',      label: 'API Manager',  icon: 'fa-solid fa-chart-bar' },
+  { id: 'providers',    label: 'Providers',    icon: 'fa-solid fa-plug' },
+  { id: 'settings',     label: 'Settings',     icon: 'fa-solid fa-gear' },
 ]
 
-// Pages hidden in Claude Code mode — these rely on direct API key billing
-const CC_HIDDEN_NAV: NavPage[]    = ['devtools', 'metrics']
-const CC_HIDDEN_SYSTEM: NavPage[] = ['metrics', 'providers']
+// Pages hidden in Claude Code mode
+const CC_HIDDEN_PLATFORM: NavPage[] = ['devtools']
+const CC_HIDDEN_SYSTEM: NavPage[]   = ['metrics', 'providers']
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.Element {
   const notifications  = useUIStore((s) => s.notifications)
@@ -44,10 +55,12 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
   const mode           = useUIStore((s) => s.mode)
   const unreadCount    = notifications.filter((n) => !n.read).length
 
-  const visibleNavItems    = mode === 'claude-code'
-    ? NAV_ITEMS.filter((i) => !CC_HIDDEN_NAV.includes(i.id))
-    : NAV_ITEMS
-  const visibleSystemItems = mode === 'claude-code'
+  const isTest               = window.electronAPI?.app?.isTest ?? false
+  const ccMode               = !isTest && mode === 'claude-code'
+  const visiblePlatformItems = ccMode
+    ? PLATFORM_ITEMS.filter((i) => !CC_HIDDEN_PLATFORM.includes(i.id))
+    : PLATFORM_ITEMS
+  const visibleSystemItems   = ccMode
     ? SYSTEM_ITEMS.filter((i) => !CC_HIDDEN_SYSTEM.includes(i.id))
     : SYSTEM_ITEMS
   const navRef         = useRef<HTMLElement>(null)
@@ -235,59 +248,52 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           onKeyDown={handleNavKeyDown}
         >
-          <span className="nav-section-label" style={{ marginTop: 4 }}>Navigation</span>
-
+          {/* ── Workspace ─────────────────────────── */}
+          <span className="nav-section-label" style={{ marginTop: 4 }}>Workspace</span>
           <div className="space-y-0.5 mt-1">
-            {visibleNavItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                data-testid={`nav-${item.id}`}
-                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-              >
+            {CORE_ITEMS.map((item) => (
+              <button key={item.id} onClick={() => onNavigate(item.id)} data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}>
                 <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
                 <span>{item.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Search trigger */}
-          <button
-            data-testid="search-trigger"
-            onClick={openSearch}
-            className="nav-item w-full text-left"
-            style={{ marginTop: 4 }}
-            title="Search (⌘⇧F)"
-          >
-            <i className="fa-solid fa-magnifying-glass w-4 text-center flex-shrink-0" style={{ fontSize: 12 }} />
-            <span style={{ flex: 1 }}>Search</span>
-            <kbd
-              style={{
-                padding: '1px 5px', borderRadius: 4,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                fontSize: 10, color: 'rgba(255,255,255,0.28)',
-                fontFamily: 'inherit', letterSpacing: 0,
-              }}
-            >
-              ⌘⇧F
-            </kbd>
-          </button>
+          {/* ── Content ───────────────────────────── */}
+          <span className="nav-section-label" style={{ marginTop: 12 }}>Content</span>
+          <div className="space-y-0.5 mt-1">
+            {CONTENT_ITEMS.map((item) => (
+              <button key={item.id} onClick={() => onNavigate(item.id)} data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}>
+                <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
 
-          {/* Divider */}
-          <div
-            className="mx-2 my-3"
+          {/* ── Platform ──────────────────────────── */}
+          <span className="nav-section-label" style={{ marginTop: 12 }}>Platform</span>
+          <div className="space-y-0.5 mt-1">
+            {visiblePlatformItems.map((item) => (
+              <button key={item.id} onClick={() => onNavigate(item.id)} data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}>
+                <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Divider ───────────────────────────── */}
+          <div className="mx-2 my-3"
             style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }}
           />
 
+          {/* ── System/Utilities ──────────────────── */}
           <div className="space-y-0.5">
             {visibleSystemItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                data-testid={`nav-${item.id}`}
-                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}
-              >
+              <button key={item.id} onClick={() => onNavigate(item.id)} data-testid={`nav-${item.id}`}
+                className={`nav-item w-full text-left ${currentPage === item.id ? 'active' : ''}`}>
                 <i className={`${item.icon} w-4 text-center flex-shrink-0`} style={{ fontSize: 12 }} />
                 <span>{item.label}</span>
               </button>
@@ -313,7 +319,30 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps): Reac
               </div>
             </div>
           )}
+
         </nav>
+
+        {/* ── Search — pinned footer, always visible ──────────── */}
+        <div
+          className="flex-shrink-0 px-3 pb-3 pt-2"
+          style={{
+            borderTop: '1px solid rgba(255,255,255,0.055)',
+            WebkitAppRegion: 'no-drag',
+          } as React.CSSProperties}
+        >
+          <button data-testid="search-trigger" onClick={openSearch}
+            className="nav-item w-full text-left" title="Search (⌘⇧F)">
+            <i className="fa-solid fa-magnifying-glass w-4 text-center flex-shrink-0" style={{ fontSize: 12 }} />
+            <span style={{ flex: 1 }}>Search</span>
+            <kbd style={{
+              padding: '1px 5px', borderRadius: 4,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              fontSize: 10, color: 'rgba(255,255,255,0.28)',
+              fontFamily: 'inherit', letterSpacing: 0,
+            }}>⌘⇧F</kbd>
+          </button>
+        </div>
       </aside>
 
       {/* ── Lyra heartbeat popover — portal escapes backdrop-filter ─ */}

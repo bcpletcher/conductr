@@ -8,7 +8,8 @@ const NAV_PAGES = [
   { id: 'intelligence', title: 'Intelligence' },
   { id: 'workshop', title: 'Workshop' },
   { id: 'clients', title: 'Clients' },
-  { id: 'metrics', title: 'API Usage & Metrics' }
+  { id: 'metrics', title: 'API Usage & Metrics' },
+  { id: 'guide', title: 'Guide' },
 ]
 
 test.describe('Navigation', () => {

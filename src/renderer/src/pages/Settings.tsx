@@ -425,7 +425,7 @@ export default function Settings(): React.JSX.Element {
     await api.app.relaunch()
   }
 
-  return (<>
+  return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="page-header" style={{ flexShrink: 0 }}>
         <h1 className="page-title">Settings</h1>
@@ -1776,7 +1776,6 @@ function NetworkTab({ accent }: { accent: string }): React.JSX.Element {
           </div>
         )}
       </div>
-    </div>
 
     {/* ── Restart Required Modal ─────────────────────────────── */}
     {showRestartModal && (
@@ -1859,7 +1858,8 @@ function NetworkTab({ accent }: { accent: string }): React.JSX.Element {
         </div>
       </div>
     )}
-  </>)
+    </div>
+  )
 }
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {

@@ -158,20 +158,68 @@
   "hotPaths": [
     {
       "path": "src/renderer/src/pages/Settings.tsx",
-      "accessCount": 24,
-      "lastAccessed": 1773611336137,
+      "accessCount": 34,
+      "lastAccessed": 1773613707564,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Chat.tsx",
+      "accessCount": 29,
+      "lastAccessed": 1773663551458,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/components/Sidebar.tsx",
+      "accessCount": 21,
+      "lastAccessed": 1773619921629,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Guide.tsx",
+      "accessCount": 20,
+      "lastAccessed": 1773663802137,
+      "type": "file"
+    },
+    {
+      "path": "src/main/ipc/chat.ts",
+      "accessCount": 13,
+      "lastAccessed": 1773663791075,
       "type": "file"
     },
     {
       "path": "src/renderer/src/pages/Agents.tsx",
-      "accessCount": 8,
-      "lastAccessed": 1773612032542,
+      "accessCount": 10,
+      "lastAccessed": 1773618781320,
       "type": "directory"
     },
     {
       "path": "src/renderer/src/env.d.ts",
-      "accessCount": 5,
-      "lastAccessed": 1773610876162,
+      "accessCount": 10,
+      "lastAccessed": 1773619703795,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Workshop.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1773619968129,
+      "type": "file"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "accessCount": 9,
+      "lastAccessed": 1773614923856,
+      "type": "file"
+    },
+    {
+      "path": "tests/chat.spec.ts",
+      "accessCount": 7,
+      "lastAccessed": 1773619240939,
+      "type": "file"
+    },
+    {
+      "path": "src/agents/claudeCodeRunner.ts",
+      "accessCount": 6,
+      "lastAccessed": 1773663671372,
       "type": "file"
     },
     {
@@ -181,9 +229,9 @@
       "type": "file"
     },
     {
-      "path": "src/renderer/src/components/Sidebar.tsx",
+      "path": "src/renderer/src/App.tsx",
       "accessCount": 5,
-      "lastAccessed": 1773610933121,
+      "lastAccessed": 1773616405069,
       "type": "file"
     },
     {
@@ -193,9 +241,21 @@
       "type": "file"
     },
     {
-      "path": "src/renderer/src/pages/Chat.tsx",
+      "path": "tests/navigation.spec.ts",
       "accessCount": 4,
-      "lastAccessed": 1773611919964,
+      "lastAccessed": 1773617573621,
+      "type": "file"
+    },
+    {
+      "path": "tests/guide.spec.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773618905873,
+      "type": "file"
+    },
+    {
+      "path": "tests/agents.spec.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773618914884,
       "type": "file"
     },
     {
@@ -217,27 +277,33 @@
       "type": "file"
     },
     {
-      "path": "src/agents/claudeCodeRunner.ts",
-      "accessCount": 3,
-      "lastAccessed": 1773612070999,
-      "type": "file"
-    },
-    {
       "path": "src/agents/runner.ts",
       "accessCount": 2,
       "lastAccessed": 1773610819664,
       "type": "file"
     },
     {
-      "path": "src/renderer/src/App.tsx",
+      "path": "tests/settings.spec.ts",
       "accessCount": 2,
-      "lastAccessed": 1773610907289,
+      "lastAccessed": 1773613729016,
+      "type": "file"
+    },
+    {
+      "path": "tests/agents-integration.spec.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773618234081,
+      "type": "file"
+    },
+    {
+      "path": "playwright.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773618265632,
       "type": "file"
     },
     {
       "path": "src/main/ipc/claudeCode.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773610775736,
+      "accessCount": 2,
+      "lastAccessed": 1773663669903,
       "type": "file"
     },
     {
@@ -247,10 +313,58 @@
       "type": "directory"
     },
     {
-      "path": "docs/roadmap.md",
+      "path": "tests/devtools.spec.ts",
       "accessCount": 1,
-      "lastAccessed": 1773611780564,
+      "lastAccessed": 1773613580266,
       "type": "file"
+    },
+    {
+      "path": "tests/metrics.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773613580318,
+      "type": "file"
+    },
+    {
+      "path": "tests/providers.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773613580579,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/pages/Blueprint.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773616119136,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1773618251118,
+      "type": "directory"
+    },
+    {
+      "path": "src/renderer/src/components/TaskCard.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773619609597,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/assets",
+      "accessCount": 1,
+      "lastAccessed": 1773619827633,
+      "type": "directory"
+    },
+    {
+      "path": "src/renderer/src/assets/agents/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773619895720,
+      "type": "file"
+    },
+    {
+      "path": "src/renderer/src/index.css",
+      "accessCount": 1,
+      "lastAccessed": 1773663563856,
+      "type": "directory"
     }
   ],
   "userDirectives": []

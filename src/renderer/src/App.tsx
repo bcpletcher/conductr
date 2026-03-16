@@ -39,6 +39,7 @@ import Providers from './pages/Providers'
 import DevTools from './pages/DevTools'
 import Channels from './pages/Channels'
 import Pipelines from './pages/Pipelines'
+import Guide from './pages/Guide'
 
 export type NavPage =
   | 'dashboard'
@@ -56,6 +57,7 @@ export type NavPage =
   | 'blueprint'
   | 'channels'
   | 'pipelines'
+  | 'guide'
 
 const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   dashboard: Dashboard,
@@ -73,6 +75,7 @@ const PAGE_MAP: Record<NavPage, React.ComponentType> = {
   blueprint: Storyboard,
   channels: Channels,
   pipelines: Pipelines,
+  guide: Guide,
 }
 
 export default function App(): React.JSX.Element {

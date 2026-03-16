@@ -4,6 +4,8 @@ test.describe('Settings page', () => {
   test.beforeEach(async ({ page }) => {
     await page.click('[data-testid="nav-settings"]')
     await expect(page.locator('[data-testid="page-settings"]')).toBeAttached()
+    // Navigate to Appearance section (page now defaults to Mode section in CC mode)
+    await page.click('[data-testid="page-settings"] button:has-text("Appearance")')
   })
 
   test('shows settings heading', async ({ page }) => {

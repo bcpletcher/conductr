@@ -295,7 +295,7 @@
 - [x] Agent's `MEMORY.md` file becomes a human-readable summary of top global memories
 
 **Skill hardening — daily review job:**
-- [x] "Skill Building" job — consolidates fragmented memories into hardened skill entries (runs manually; scheduled in Phase 18)
+- [x] "Skill Building" job — consolidates fragmented memories into hardened skill entries (runs manually; scheduled in Phase 20)
 - [x] 10 separate Vue.js observations → synthesized into single "Vue 3 Composition API expert profile"
 - [x] Skills promoted from client-scoped to global when same pattern appears across ≥3 clients
 - [x] Skill level indicators per domain: Novice → Practitioner → Expert → Master
@@ -561,7 +561,42 @@ OpenClaw runs as a **sidecar daemon** managed by Conductr (same pattern as Ollam
 
 ---
 
-## Phase 18 — Intelligence, Documents & Journal Expansions
+## Phase 18 — Claude Code Mode ✅
+> Dual execution modes — use the Claude Code CLI for zero-API-key task execution, or unlock the full provider/metrics stack with an API key.
+
+**Conductor Mode (`claude-code` | `api-key`):**
+- [x] `conductor_mode` setting stored in SQLite (`INSERT OR IGNORE` default = `claude-code`)
+- [x] Settings → Mode section (default active section) — two mode cards with feature summaries
+- [x] Restart-confirmation modal on mode switch (`app.relaunch()` + `app.exit(0)`)
+- [x] Mode-gated sidebar: devtools, metrics, providers hidden in Claude Code mode
+- [x] Test-mode bypass in Sidebar (`app.isTest` shows all nav items — preserves 106/106 tests)
+
+**Onboarding redesign:**
+- [x] Step 1 = Mode Selection (Claude Code Mode with "Default" badge vs API Key Mode)
+- [x] CC path (5 steps): welcome → mode → CLI check → roster → done
+- [x] API path (6 steps): welcome → mode → provider → key/Ollama → roster → done
+- [x] CLI check step: detect `claude` binary, show install guide if missing, "Recheck" + "Continue Anyway" buttons
+- [x] All 11 agents shown as active in roster (no phase-locked section)
+
+**Claude Code CLI runner (`src/agents/claudeCodeRunner.ts`):**
+- [x] Spawns `claude -p --output-format stream-json --verbose <prompt>` with `cwd: agentDir`
+- [x] Structured event parsing: `assistant` (text chunks), `tool_use` (⚡ Tool: name → arg), `tool_result` (first 5 lines), `result` (final)
+- [x] Line-buffered parser handles partial chunks across data events
+- [x] Graceful fallback: non-JSON lines logged as plain text; `ENOENT` → helpful install message
+
+**Chat UI redesign (document style):**
+- [x] AI messages: full-width with `AgentChip` header (small colored square + agent name), no bubble border
+- [x] User messages: compact right-aligned block (`rgba(255,255,255,0.07)` bg, 78% max-width)
+- [x] Actions (bookmark, copy, queue-as-task) fade-on-hover at bottom of AI message
+- [x] Streaming bubble uses same `AgentChip` + cursor pulse layout
+
+**Agent → Claude Code sync:**
+- [x] `ClaudeCodeSyncCard` in Protocol tab (visible in CC mode only)
+- [x] `claudeCode:syncAllAgents` IPC — compiles SOUL.md + IDENTITY.md + TOOLS.md → `~/.conductr/agents/<id>/CLAUDE.md`
+
+---
+
+## Phase 19 — Intelligence, Documents & Journal Expansions
 > The knowledge layer — advanced features on top of the Phase 5 foundation
 
 **Documents:**
@@ -570,7 +605,7 @@ OpenClaw runs as a **sidecar daemon** managed by Conductr (same pattern as Ollam
 - [ ] File attachments — attach local files to tasks and documents
 
 **Intelligence:**
-- [ ] Weekly Recaps — auto-generated report (tasks completed, agents used, costs, key learnings) — runs on demand; scheduled in Phase 19
+- [ ] Weekly Recaps — auto-generated report (tasks completed, agents used, costs, key learnings) — runs on demand; scheduled in Phase 20
 - [ ] Agent performance dashboard — fastest/cheapest per task type, success rate over time
 - [ ] Anomaly detection — flag unusual spend, failed tasks, agent errors
 - [ ] Recommendations — "Based on recent tasks, you should create a pipeline for X"
@@ -585,13 +620,13 @@ OpenClaw runs as a **sidecar daemon** managed by Conductr (same pattern as Ollam
 
 ---
 
-## Phase 19 — Scheduled Tasks & Automation
+## Phase 20 — Scheduled Tasks & Automation
 > Agents that work while you sleep — set it and forget it
 
 **Cron scheduling:**
 - [ ] Schedule any task to run at specific times/intervals (cron expression builder UI)
 - [ ] "Skill Building" daily job (Phase 10) now runs on cron schedule
-- [ ] "Weekly Recap" generation (Phase 18) now runs on cron schedule
+- [ ] "Weekly Recap" generation (Phase 19) now runs on cron schedule
 - [ ] Dashboard shows upcoming scheduled tasks + last run status
 
 **Pipeline triggers (extends Phase 17):**
@@ -615,7 +650,7 @@ OpenClaw runs as a **sidecar daemon** managed by Conductr (same pattern as Ollam
 
 ---
 
-## Phase 20 — Advanced Integrations Hub
+## Phase 21 — Advanced Integrations Hub
 > Connect what remains — Jira, data sources, and operational tooling
 > Note: Slack, Discord, WhatsApp, Telegram, iMessage, and webhook channels are handled by OpenClaw in Phase 15
 

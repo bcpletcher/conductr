@@ -76,10 +76,11 @@ export async function runTaskViaClaude(
 
   return new Promise((resolve, reject) => {
     const proc = spawn('claude', [
-      '--project', agentDir,
       '--output-format', 'stream-json',
-      '--print', prompt,
+      '--verbose',
+      '-p', prompt,
     ], {
+      cwd: agentDir,
       env: { ...process.env },
     })
 

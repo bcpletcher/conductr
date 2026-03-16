@@ -1,4 +1,7 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, app } from 'electron'
+import { spawn } from 'child_process'
+import path from 'path'
+import { mkdirSync, writeFileSync } from 'fs'
 import { getMessages, addMessage, clearMessages, toggleBookmark } from '../db/messages'
 import { getAgentById } from '../db/agents'
 import { getTaskCounts, getTasksByStatus } from '../db/tasks'
@@ -6,6 +9,126 @@ import { getAgentFiles } from '../db/agentFiles'
 import { getSetting } from '../db/settings'
 import { routeRequest } from '../../api/router'
 import type { ChatMessage, ContentPart } from '../../api/providers/types'
+
+/**
+ * Stream a chat message through the Claude Code CLI.
+ * Used when conductor_mode = 'claude-code' (no API key required).
+ */
+async function streamChatViaCLI(
+  agentId: string,
+  agentDir: string,
+  systemPrompt: string,
+  userPrompt: string,
+  win: BrowserWindow
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Extend PATH to include common user-local bin dirs that Electron may not inherit
+    const extraPaths = [
+      process.env.PATH ?? '',
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
+      `${process.env.HOME ?? ''}/.local/bin`,
+      `${process.env.HOME ?? ''}/.npm-global/bin`,
+    ].filter(Boolean).join(':')
+
+    // Write system prompt to CLAUDE.md — the CLI reads this automatically from cwd.
+    // This avoids passing a huge string as a command-line arg (which can fail silently).
+    writeFileSync(`${agentDir}/CLAUDE.md`, systemPrompt, 'utf8')
+
+    const proc = spawn('claude', [
+      '--output-format', 'stream-json',
+      '--verbose',
+      '--dangerously-skip-permissions',
+      '-p', userPrompt,
+    ], {
+      cwd: agentDir,
+      env: { ...process.env, PATH: extraPaths },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+
+    let finalContent = ''
+    let chunkBuffer  = ''  // fallback: accumulate every streamed text chunk
+    let lineBuffer   = ''
+    const stderrLines: string[] = []
+    let rejected     = false
+
+    function processLine(line: string): void {
+      if (!line.trim()) return
+      try {
+        const event = JSON.parse(line) as {
+          type: string
+          message?: { content?: { type: string; text: string }[] }
+          result?: string
+          subtype?: string
+          error?: string
+        }
+        if (event.type === 'assistant') {
+          // Each assistant event may be partial (streaming) or final.
+          // De-duplicate: only append the NEW portion beyond what we already have.
+          const fullText = (event.message?.content ?? [])
+            .filter((b) => b.type === 'text')
+            .map((b) => b.text)
+            .join('')
+          if (fullText) {
+            const newPart = fullText.startsWith(chunkBuffer)
+              ? fullText.slice(chunkBuffer.length)   // streaming delta
+              : fullText                              // standalone (non-partial) event
+            if (newPart) {
+              win.webContents.send('chat:chunk', { agentId, chunk: newPart })
+              chunkBuffer = fullText   // track cumulative text
+            }
+          }
+        } else if (event.type === 'result') {
+          if (event.result) finalContent = event.result
+          if (event.subtype === 'error' && event.error && !rejected) {
+            rejected = true
+            reject(new Error(event.error))
+          }
+        }
+      } catch { /* non-JSON line — ignore */ }
+    }
+
+    proc.stdout.on('data', (data: Buffer) => {
+      lineBuffer += data.toString()
+      const lines = lineBuffer.split('\n')
+      lineBuffer = lines.pop() ?? ''
+      for (const line of lines) processLine(line)
+    })
+
+    proc.stderr.on('data', (data: Buffer) => {
+      const text = data.toString()
+      stderrLines.push(text.trim())
+      // Auto-respond to planning mode / tool confirmation prompts on stderr
+      if (/\?\s*$|y\/n|\[yes\/no\]|proceed|confirm|approve/i.test(text)) {
+        try { proc.stdin?.write('yes\n') } catch { /* ignore */ }
+      }
+    })
+
+    proc.on('error', (err) => {
+      if (rejected) return
+      rejected = true
+      const msg = err.message.includes('ENOENT')
+        ? 'Claude Code CLI not found — install with: npm install -g @anthropic-ai/claude-code'
+        : err.message
+      reject(new Error(msg))
+    })
+
+    proc.on('close', (code) => {
+      if (rejected) return
+      if (lineBuffer.trim()) processLine(lineBuffer)
+      // Prefer the result event's canonical text; fall back to accumulated streaming chunks
+      const content = finalContent.trim() || chunkBuffer.trim()
+      if (!content) {
+        const hint = stderrLines.length > 0
+          ? ` — ${stderrLines.slice(-3).join('; ')}`
+          : ` (exit code ${code})`
+        reject(new Error(`No response from Claude Code CLI${hint}`))
+      } else {
+        resolve(content)
+      }
+    })
+  })
+}
 
 const CHAT_FILE_ORDER = ['SOUL.md', 'IDENTITY.md', 'TOOLS.md', 'MEMORY.md']
 
@@ -145,6 +268,34 @@ export function registerChatHandlers(win: BrowserWindow): void {
       ...priorMessages,
       { role: 'user', content: currentUserContent },
     ]
+
+    // ── Claude Code mode: route through CLI instead of API ───────────────────
+    const conductorMode = getSetting('conductor_mode') ?? 'claude-code'
+    if (conductorMode === 'claude-code') {
+      const agentDir = path.join(app.getPath('home'), '.conductr', 'agents', agentId)
+      try { mkdirSync(agentDir, { recursive: true }) } catch { /* already exists */ }
+
+      // Build contextual prompt — include recent message history so CLI maintains coherence
+      const allMessages  = getMessages(agentId)
+      const contextMsgs  = allMessages.slice(-9, -1)   // last 8 prior turns (excl. current)
+      let cliPrompt = content
+      if (contextMsgs.length > 0) {
+        const ctxStr = contextMsgs
+          .map((m) => `**${m.role === 'user' ? 'User' : agentName}:** ${String(m.content).slice(0, 400)}`)
+          .join('\n\n')
+        cliPrompt = `[Conversation so far:]\n${ctxStr}\n\n[Current message:]\n${content}`
+      }
+
+      try {
+        const result = await streamChatViaCLI(agentId, agentDir, fullSystemPrompt, cliPrompt, win)
+        const assistantMsg = addMessage(agentId, 'assistant', result)
+        win.webContents.send('chat:done', { agentId, message: assistantMsg })
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        win.webContents.send('chat:error', { agentId, error })
+      }
+      return
+    }
 
     // Load MCP tools assigned to this agent
     let mcpTools: import('../../api/providers/types').RouteOptions['tools'] = undefined

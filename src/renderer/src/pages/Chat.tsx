@@ -690,7 +690,16 @@ export default function Chat(): React.JSX.Element {
       })
       api.chat.onError(({ agentId, error }) => {
         if (agentId !== id) return
-        setStreamContent(`⚠ ${error}`)
+        // Add as a message so the error is visible even when no prior messages exist
+        setMessages((prev) => [...prev, {
+          id: `err-${Date.now()}`,
+          agent_id: id,
+          role: 'assistant',
+          content: `⚠️ ${error}`,
+          created_at: new Date().toISOString(),
+          bookmarked: 0,
+        } as Message])
+        setStreamContent('')
         setStreaming(false)
       })
     }
@@ -1052,6 +1061,7 @@ export default function Chat(): React.JSX.Element {
           {/* Agent switcher */}
           {!broadcastMode && (
             <select
+              data-testid="chat-agent-select"
               value={selectedAgent?.id ?? ''}
               onChange={(e) => handleAgentSwitch(e.target.value)}
               className="input text-sm"
@@ -1347,6 +1357,7 @@ export default function Chat(): React.JSX.Element {
             {/* @-mention autocomplete */}
             {mentionMenu && mentionSuggestions.length > 0 && (
               <div
+                data-testid="mention-picker"
                 className="absolute bottom-full left-3 mb-2 rounded-xl overflow-hidden z-10"
                 style={{
                   background: 'rgba(20,20,35,0.98)',
@@ -1358,23 +1369,22 @@ export default function Chat(): React.JSX.Element {
                 {mentionSuggestions.map((agent) => (
                   <button
                     key={agent.id}
+                    data-testid={`mention-item-${agent.id}`}
                     onMouseDown={(e) => { e.preventDefault(); insertMention(agent.name) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors"
                     style={{ color: '#e2e8f0' }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <AgentAvatar agent={agent} size="sm" />
-                    <div>
-                      <div className="font-medium" style={{ fontSize: 13 }}>{agent.name}</div>
-                      <div className="text-xs" style={{ color: '#64748b' }}>{agent.operational_role ?? 'Agent'}</div>
-                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#dde2f0' }}>{agent.name}</span>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>{agent.operational_role ?? 'Agent'}</span>
                   </button>
                 ))}
               </div>
             )}
 
             <textarea
+              data-testid="chat-input"
               ref={textareaRef}
               value={input}
               onChange={handleInputChange}
@@ -1431,6 +1441,7 @@ export default function Chat(): React.JSX.Element {
             </div>
 
             <button
+              data-testid="chat-send-btn"
               onClick={handleSend}
               disabled={(!input.trim() && pendingImages.length === 0) || !selectedAgent || streaming}
               className="btn-primary flex-shrink-0 disabled:opacity-40"

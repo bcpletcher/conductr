@@ -227,6 +227,9 @@ interface TaskDetailProps {
   liveLog:      ActivityLogEntry[]
   liveProgress: number
   onClose:      () => void
+  onStart?:     () => void
+  onDelete?:    () => void
+  onCancel?:    () => void
 }
 
 function TaskDetail({
@@ -234,9 +237,11 @@ function TaskDetail({
   agents,
   liveLog,
   liveProgress,
-  onClose: _onClose
+  onClose: _onClose,
+  onStart,
+  onDelete,
+  onCancel,
 }: TaskDetailProps): React.JSX.Element {
-  const [running,  setRunning]  = useState(false)
   const [taskDocs, setTaskDocs] = useState<Document[]>([])
   const [tokenEstimate, setTokenEstimate] = useState<TokenEstimate | null>(null)
   const assignedAgent = agents.find((a) => a.id === task.agent_id)
@@ -248,12 +253,6 @@ function TaskDetail({
     }
   }, [task.id])
 
-  async function handleStart(): Promise<void> {
-    setRunning(true)
-    await api.tasks.start(task.id)
-    setRunning(false)
-  }
-
   return (
     <div className="p-6">
       {/* Title + status */}
@@ -262,17 +261,31 @@ function TaskDetail({
           <h2 className="text-lg font-semibold text-text-primary mb-1">{task.title}</h2>
           <StatusBadge status={task.status} pulse />
         </div>
-        {task.status === 'queued' && (
-          <button
-            onClick={handleStart}
-            disabled={running}
-            className="btn-primary disabled:opacity-50"
-          >
-            {running
-              ? 'Running…'
-              : <><span>Start Task</span> <i className="fa-solid fa-arrow-right ml-1" /></>}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {task.status === 'queued' && onStart && (
+            <button onClick={onStart} className="btn-primary">
+              <span>Start Task</span> <i className="fa-solid fa-arrow-right ml-1" />
+            </button>
+          )}
+          {task.status === 'active' && onCancel && (
+            <button
+              onClick={onCancel}
+              className="btn-ghost px-3 py-1.5 text-sm"
+              style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+            >
+              <i className="fa-solid fa-stop mr-1.5" />Cancel
+            </button>
+          )}
+          {(task.status === 'queued' || task.status === 'complete' || task.status === 'failed') && onDelete && (
+            <button
+              onClick={onDelete}
+              className="btn-ghost px-3 py-1.5 text-sm"
+              style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+            >
+              <i className="fa-solid fa-trash mr-1.5" />Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Description */}
@@ -593,6 +606,18 @@ export default function Workshop(): React.JSX.Element {
     api.tasks.start(taskId)
   }
 
+  async function handleDeleteTask(taskId: string): Promise<void> {
+    await api.tasks.delete(taskId)
+    setSelectedTask(null)
+    loadTasks()
+  }
+
+  async function handleCancelTask(taskId: string): Promise<void> {
+    await api.tasks.updateStatus(taskId, 'failed')
+    setSelectedTask((prev) => prev?.id === taskId ? { ...prev, status: 'failed' } : prev)
+    loadTasks()
+  }
+
   return (
     <div data-testid="workshop-page" className="flex flex-col h-full">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -707,6 +732,9 @@ export default function Workshop(): React.JSX.Element {
             liveLog={taskLogs.get(selectedTask.id) ?? []}
             liveProgress={taskProgress.get(selectedTask.id) ?? selectedTask.progress}
             onClose={() => setSelectedTask(null)}
+            onStart={() => { handleStartFromCard(selectedTask.id) }}
+            onDelete={() => { handleDeleteTask(selectedTask.id) }}
+            onCancel={() => { handleCancelTask(selectedTask.id) }}
           />
         )}
       </Modal>
