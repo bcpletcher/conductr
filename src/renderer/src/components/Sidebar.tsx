@@ -24,7 +24,7 @@ const CONTENT_ITEMS: NavItemDef[] = [
   { id: 'journal',      label: 'Journal',      icon: 'fa-solid fa-book' },
   { id: 'intelligence', label: 'Intelligence', icon: 'fa-solid fa-brain' },
   { id: 'clients',      label: 'Clients',      icon: 'fa-solid fa-users' },
-  { id: 'guide',        label: 'Guide',        icon: 'fa-solid fa-book-open' },
+  { id: 'pipelines',    label: 'Pipelines',    icon: 'fa-solid fa-diagram-project' },
 ]
 
 // ── Platform: agents, integrations, tools ───────────────────────────────────
@@ -37,7 +37,7 @@ const PLATFORM_ITEMS: NavItemDef[] = [
 
 // ── System/utilities (below divider) ────────────────────────────────────────
 const SYSTEM_ITEMS: NavItemDef[] = [
-  { id: 'pipelines',    label: 'Pipelines',    icon: 'fa-solid fa-diagram-project' },
+  { id: 'guide',        label: 'Guide',        icon: 'fa-solid fa-book-open' },
   { id: 'metrics',      label: 'API Manager',  icon: 'fa-solid fa-chart-bar' },
   { id: 'providers',    label: 'Providers',    icon: 'fa-solid fa-plug' },
   { id: 'settings',     label: 'Settings',     icon: 'fa-solid fa-gear' },

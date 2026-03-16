@@ -6,21 +6,22 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Pipeline, PipelineStepDef, PipelineRun, PipelineStepRun } from '../env.d'
 import { useUIStore } from '../store/ui'
+import { AGENT_AVATARS, AGENT_COLORS } from '../assets/agents'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const AGENT_LABELS: Record<string, { name: string; color: string; avatar: string }> = {
-  'agent-lyra':     { name: 'Lyra',     color: '#818cf8', avatar: '✦' },
-  'agent-nova':     { name: 'Nova',     color: '#a78bfa', avatar: '⚡' },
-  'agent-scout':    { name: 'Scout',    color: '#22d3ee', avatar: '🔍' },
-  'agent-forge':    { name: 'Forge',    color: '#f97316', avatar: '⚙️' },
-  'agent-pixel':    { name: 'Pixel',    color: '#ec4899', avatar: '🎨' },
-  'agent-sentinel': { name: 'Sentinel', color: '#34d399', avatar: '🛡️' },
-  'agent-courier':  { name: 'Courier',  color: '#fbbf24', avatar: '📦' },
-  'agent-nexus':    { name: 'Nexus',    color: '#0ea5e9', avatar: '🌐' },
-  'agent-helm':     { name: 'Helm',     color: '#f43f5e', avatar: '🧭' },
-  'agent-atlas':    { name: 'Atlas',    color: '#9333ea', avatar: '📋' },
-  'agent-ledger':   { name: 'Ledger',   color: '#eab308', avatar: '⚖️' },
+const AGENT_LABELS: Record<string, { name: string; color: string }> = {
+  'agent-lyra':     { name: 'Lyra',     color: '#818cf8' },
+  'agent-nova':     { name: 'Nova',     color: '#a78bfa' },
+  'agent-scout':    { name: 'Scout',    color: '#22d3ee' },
+  'agent-forge':    { name: 'Forge',    color: '#f97316' },
+  'agent-pixel':    { name: 'Pixel',    color: '#ec4899' },
+  'agent-sentinel': { name: 'Sentinel', color: '#34d399' },
+  'agent-courier':  { name: 'Courier',  color: '#fbbf24' },
+  'agent-nexus':    { name: 'Nexus',    color: '#0ea5e9' },
+  'agent-helm':     { name: 'Helm',     color: '#f43f5e' },
+  'agent-atlas':    { name: 'Atlas',    color: '#9333ea' },
+  'agent-ledger':   { name: 'Ledger',   color: '#eab308' },
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -36,15 +37,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 function AgentPill({ agentId }: { agentId: string }): React.JSX.Element {
   const info = AGENT_LABELS[agentId]
-  if (!info) return <span style={{ fontSize: 11, color: '#64748b' }}>{agentId}</span>
+  const avatarUrl = AGENT_AVATARS[agentId]
+  const color = info?.color ?? AGENT_COLORS[agentId] ?? '#818cf8'
+  const name = info?.name ?? agentId
+  if (!info && !avatarUrl) return <span style={{ fontSize: 11, color: '#64748b' }}>{agentId}</span>
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '2px 8px', borderRadius: 20,
-      background: `${info.color}18`, border: `1px solid ${info.color}40`,
-      fontSize: 11, color: info.color, fontWeight: 600,
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '2px 8px 2px 4px', borderRadius: 20,
+      background: `${color}18`, border: `1px solid ${color}40`,
+      fontSize: 11, color, fontWeight: 600,
     }}>
-      <span>{info.avatar}</span> {info.name}
+      {avatarUrl
+        ? <img src={avatarUrl} alt={name} style={{ width: 14, height: 14, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+        : <span style={{ width: 14, height: 14, borderRadius: 4, background: `${color}30`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8 }}>✦</span>
+      }
+      {name}
     </span>
   )
 }

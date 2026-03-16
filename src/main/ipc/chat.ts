@@ -31,19 +31,34 @@ async function streamChatViaCLI(
       `${process.env.HOME ?? ''}/.npm-global/bin`,
     ].filter(Boolean).join(':')
 
-    // Write system prompt to CLAUDE.md — the CLI reads this automatically from cwd.
-    // This avoids passing a huge string as a command-line arg (which can fail silently).
-    writeFileSync(`${agentDir}/CLAUDE.md`, systemPrompt, 'utf8')
+    // ── CLAUDE.md system prompt ───────────────────────────────────────────────
+    // Write the agent's chat-mode prompt to CLAUDE.md so the CLI picks it up
+    // automatically from cwd.  This also overwrites any stale COMMAND MODE
+    // directive that would cause autonomous tool execution.
+    try {
+      writeFileSync(path.join(agentDir, 'CLAUDE.md'), systemPrompt, 'utf8')
+    } catch { /* non-fatal */ }
 
+    // ── Spawn env ─────────────────────────────────────────────────────────────
+    // Remove empty ANTHROPIC_API_KEY — an empty string causes the CLI to attempt
+    // API-key auth (blocking) instead of falling back to ~/.claude.json OAuth.
+    const spawnEnv: NodeJS.ProcessEnv = { ...process.env, PATH: extraPaths }
+    if (!spawnEnv.ANTHROPIC_API_KEY) delete spawnEnv.ANTHROPIC_API_KEY
+
+    // ── Spawn ─────────────────────────────────────────────────────────────────
+    // stdio: ['ignore', 'pipe', 'pipe'] is the critical fix:
+    // Without it, the process blocks forever waiting for stdin — either the CLI
+    // itself (for login) or the OMC plugin hooks (SessionStart:startup) try to
+    // read from stdin.  'ignore' sends immediate EOF so they exit cleanly.
     const proc = spawn('claude', [
       '--output-format', 'stream-json',
       '--verbose',
-      '--dangerously-skip-permissions',
+      '--no-session-persistence',
       '-p', userPrompt,
     ], {
       cwd: agentDir,
-      env: { ...process.env, PATH: extraPaths },
-      stdio: ['pipe', 'pipe', 'pipe'],
+      env: spawnEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
     })
 
     let finalContent = ''
@@ -51,6 +66,18 @@ async function streamChatViaCLI(
     let lineBuffer   = ''
     const stderrLines: string[] = []
     let rejected     = false
+
+    // ── Hard timeout — prevents infinite spinner if CLI hangs ────────────────
+    const timeout = setTimeout(() => {
+      if (rejected) return
+      rejected = true
+      console.error(`[conductr:chat] TIMEOUT after 45s for agent=${agentId}`)
+      try { proc.kill('SIGTERM') } catch { /* ignore */ }
+      reject(new Error(
+        'Claude CLI timed out (45 s) — verify `claude --version` works in your terminal, ' +
+        'then restart the app'
+      ))
+    }, 45_000)
 
     function processLine(line: string): void {
       if (!line.trim()) return
@@ -82,6 +109,7 @@ async function streamChatViaCLI(
           if (event.result) finalContent = event.result
           if (event.subtype === 'error' && event.error && !rejected) {
             rejected = true
+            clearTimeout(timeout)
             reject(new Error(event.error))
           }
         }
@@ -89,7 +117,9 @@ async function streamChatViaCLI(
     }
 
     proc.stdout.on('data', (data: Buffer) => {
-      lineBuffer += data.toString()
+      const text = data.toString()
+      console.error(`[conductr:chat][stdout] ${text.slice(0, 120).replace(/\n/g, '↵')}`)
+      lineBuffer += text
       const lines = lineBuffer.split('\n')
       lineBuffer = lines.pop() ?? ''
       for (const line of lines) processLine(line)
@@ -98,6 +128,7 @@ async function streamChatViaCLI(
     proc.stderr.on('data', (data: Buffer) => {
       const text = data.toString()
       stderrLines.push(text.trim())
+      console.error(`[conductr:chat][stderr] ${text.trim()}`)
       // Auto-respond to planning mode / tool confirmation prompts on stderr
       if (/\?\s*$|y\/n|\[yes\/no\]|proceed|confirm|approve/i.test(text)) {
         try { proc.stdin?.write('yes\n') } catch { /* ignore */ }
@@ -105,19 +136,23 @@ async function streamChatViaCLI(
     })
 
     proc.on('error', (err) => {
+      clearTimeout(timeout)
       if (rejected) return
       rejected = true
       const msg = err.message.includes('ENOENT')
         ? 'Claude Code CLI not found — install with: npm install -g @anthropic-ai/claude-code'
         : err.message
+      console.error(`[conductr:chat][proc error] ${msg}`)
       reject(new Error(msg))
     })
 
     proc.on('close', (code) => {
+      clearTimeout(timeout)
       if (rejected) return
       if (lineBuffer.trim()) processLine(lineBuffer)
       // Prefer the result event's canonical text; fall back to accumulated streaming chunks
       const content = finalContent.trim() || chunkBuffer.trim()
+      console.error(`[conductr:chat][close] code=${code} | content_len=${content.length} | stderr_lines=${stderrLines.length}`)
       if (!content) {
         const hint = stderrLines.length > 0
           ? ` — ${stderrLines.slice(-3).join('; ')}`
@@ -275,6 +310,17 @@ export function registerChatHandlers(win: BrowserWindow): void {
       const agentDir = path.join(app.getPath('home'), '.conductr', 'agents', agentId)
       try { mkdirSync(agentDir, { recursive: true }) } catch { /* already exists */ }
 
+      // Short chat-mode system prompt for CLI — no COMMAND MODE / agent files.
+      // The full directive triggers autonomous tool execution; keep this to identity + context only.
+      const roleOneLiner = agent?.operational_role?.split('\n')[0] ?? 'helpful AI assistant'
+      const cliSystemPrompt = [
+        `You are ${agentName}, ${roleOneLiner}.`,
+        'You are in chat mode. Respond conversationally — be helpful, direct, and concise.',
+        'Do not autonomously execute tools or tasks unless the user explicitly asks you to.',
+        '',
+        liveContext,
+      ].join('\n')
+
       // Build contextual prompt — include recent message history so CLI maintains coherence
       const allMessages  = getMessages(agentId)
       const contextMsgs  = allMessages.slice(-9, -1)   // last 8 prior turns (excl. current)
@@ -287,7 +333,7 @@ export function registerChatHandlers(win: BrowserWindow): void {
       }
 
       try {
-        const result = await streamChatViaCLI(agentId, agentDir, fullSystemPrompt, cliPrompt, win)
+        const result = await streamChatViaCLI(agentId, agentDir, cliSystemPrompt, cliPrompt, win)
         const assistantMsg = addMessage(agentId, 'assistant', result)
         win.webContents.send('chat:done', { agentId, message: assistantMsg })
       } catch (err) {

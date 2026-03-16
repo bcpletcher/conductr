@@ -157,39 +157,39 @@
   },
   "hotPaths": [
     {
+      "path": "src/main/ipc/chat.ts",
+      "accessCount": 35,
+      "lastAccessed": 1773677359741,
+      "type": "file"
+    },
+    {
       "path": "src/renderer/src/pages/Settings.tsx",
       "accessCount": 34,
       "lastAccessed": 1773613707564,
       "type": "file"
     },
     {
-      "path": "src/renderer/src/pages/Chat.tsx",
-      "accessCount": 29,
-      "lastAccessed": 1773663551458,
+      "path": "src/renderer/src/components/Sidebar.tsx",
+      "accessCount": 32,
+      "lastAccessed": 1773678961817,
       "type": "file"
     },
     {
-      "path": "src/renderer/src/components/Sidebar.tsx",
-      "accessCount": 21,
-      "lastAccessed": 1773619921629,
+      "path": "src/renderer/src/pages/Chat.tsx",
+      "accessCount": 30,
+      "lastAccessed": 1773679038196,
       "type": "file"
     },
     {
       "path": "src/renderer/src/pages/Guide.tsx",
-      "accessCount": 20,
-      "lastAccessed": 1773663802137,
-      "type": "file"
-    },
-    {
-      "path": "src/main/ipc/chat.ts",
-      "accessCount": 13,
-      "lastAccessed": 1773663791075,
+      "accessCount": 28,
+      "lastAccessed": 1773678967093,
       "type": "file"
     },
     {
       "path": "src/renderer/src/pages/Agents.tsx",
-      "accessCount": 10,
-      "lastAccessed": 1773618781320,
+      "accessCount": 11,
+      "lastAccessed": 1773679038850,
       "type": "directory"
     },
     {
@@ -259,6 +259,18 @@
       "type": "file"
     },
     {
+      "path": "src/renderer/src",
+      "accessCount": 4,
+      "lastAccessed": 1773679021068,
+      "type": "directory"
+    },
+    {
+      "path": "src/renderer/src/pages/Pipelines.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1773679073406,
+      "type": "directory"
+    },
+    {
       "path": "src/main/db/schema.ts",
       "accessCount": 3,
       "lastAccessed": 1773610751452,
@@ -275,6 +287,12 @@
       "accessCount": 3,
       "lastAccessed": 1773610856621,
       "type": "file"
+    },
+    {
+      "path": "src/renderer/src/index.css",
+      "accessCount": 3,
+      "lastAccessed": 1773677790089,
+      "type": "directory"
     },
     {
       "path": "src/agents/runner.ts",
@@ -304,6 +322,18 @@
       "path": "src/main/ipc/claudeCode.ts",
       "accessCount": 2,
       "lastAccessed": 1773663669903,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1773678947223,
+      "type": "directory"
+    },
+    {
+      "path": "src/renderer/src/assets/agents/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773678997091,
       "type": "file"
     },
     {
@@ -337,12 +367,6 @@
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 1,
-      "lastAccessed": 1773618251118,
-      "type": "directory"
-    },
-    {
       "path": "src/renderer/src/components/TaskCard.tsx",
       "accessCount": 1,
       "lastAccessed": 1773619609597,
@@ -352,18 +376,6 @@
       "path": "src/renderer/src/assets",
       "accessCount": 1,
       "lastAccessed": 1773619827633,
-      "type": "directory"
-    },
-    {
-      "path": "src/renderer/src/assets/agents/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773619895720,
-      "type": "file"
-    },
-    {
-      "path": "src/renderer/src/index.css",
-      "accessCount": 1,
-      "lastAccessed": 1773663563856,
       "type": "directory"
     }
   ],

@@ -13,7 +13,6 @@ const TABS: { id: Tab; label: string; icon: string; color: string }[] = [
 
 // ── Shared style helpers ────────────────────────────────────────────────────
 
-
 const sectionHeadingStyle = (color: string): React.CSSProperties => ({
   fontSize: 18,
   fontWeight: 700,
@@ -108,13 +107,7 @@ function AgentCard({ name, role, color, agentId, description }: {
 }): React.JSX.Element {
   const avatarUrl = AGENT_AVATARS[agentId]
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      borderLeft: `3px solid ${color}`,
-      borderRadius: 10,
-      padding: '14px 16px',
-    }}>
+    <div className="card" style={{ borderLeft: `3px solid ${color}`, padding: '14px 16px' }}>
       <div className="flex items-center gap-2.5 mb-1.5">
         {avatarUrl
           ? <img src={avatarUrl} alt={name} style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
@@ -166,23 +159,13 @@ function GettingStarted(): React.JSX.Element {
   return (
     <div>
       {/* Hero banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(129,140,248,0.12) 0%, rgba(167,139,250,0.08) 100%)',
-        border: '1px solid rgba(129,140,248,0.18)',
-        borderRadius: 16,
-        padding: '28px 32px',
-        marginBottom: 24,
-      }}>
+      <div className="card mb-6" style={{ padding: '28px 32px' }}>
         <div className="flex items-center gap-3 mb-3">
-          <div style={{
-            width: 40, height: 40,
-            background: 'rgba(129,140,248,0.15)',
-            border: '1px solid rgba(129,140,248,0.3)',
-            borderRadius: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <i className="fa-solid fa-tower-control" style={{ fontSize: 18, color: '#818cf8' }} />
-          </div>
+          <img
+            src="./conductr.webp"
+            alt="Conductr"
+            style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
+          />
           <div>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#eef0f8', letterSpacing: '-0.03em' }}>
               Welcome to Conductr
@@ -203,12 +186,7 @@ function GettingStarted(): React.JSX.Element {
       <div style={{ ...sectionHeadingStyle('#818cf8') }}>Choose Your Mode</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 8 }}>
         {/* CC Mode */}
-        <div style={{
-          background: 'rgba(129,140,248,0.07)',
-          border: '1px solid rgba(129,140,248,0.22)',
-          borderRadius: 12,
-          padding: '20px 22px',
-        }}>
+        <div className="card" style={{ borderLeft: '3px solid #818cf8', padding: '20px 22px' }}>
           <div className="flex items-center gap-2 mb-3">
             <i className="fa-solid fa-terminal" style={{ color: '#818cf8', fontSize: 15 }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: '#eef0f8' }}>Claude Code Mode</span>
@@ -230,12 +208,7 @@ function GettingStarted(): React.JSX.Element {
         </div>
 
         {/* API Key Mode */}
-        <div style={{
-          background: 'rgba(167,139,250,0.07)',
-          border: '1px solid rgba(167,139,250,0.22)',
-          borderRadius: 12,
-          padding: '20px 22px',
-        }}>
+        <div className="card" style={{ borderLeft: '3px solid #a78bfa', padding: '20px 22px' }}>
           <div className="flex items-center gap-2 mb-3">
             <i className="fa-solid fa-key" style={{ color: '#a78bfa', fontSize: 15 }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: '#eef0f8' }}>API Key Mode</span>
@@ -258,7 +231,7 @@ function GettingStarted(): React.JSX.Element {
 
       {/* Quick Start */}
       <div style={sectionHeadingStyle('#34d399')}>Quick Start</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         {[
           { n: '1', title: 'Launch Conductr', body: 'Open the app — you\'ll see the onboarding wizard on first launch. Follow the steps to configure your mode and meet your agent roster.' },
           { n: '2', title: 'Chat with Lyra', body: 'Click Chat in the sidebar and select Lyra (your lead orchestrator). Say hello — Lyra can answer questions, plan work, and help you get started.' },
@@ -291,12 +264,7 @@ function GettingStarted(): React.JSX.Element {
           { icon: 'fa-diagram-project', color: '#9333ea', label: 'Pipelines',            body: 'Build multi-step agent workflows with parallel execution' },
           { icon: 'fa-tower-broadcast', color: '#0ea5e9', label: 'Channels (OpenClaw)',  body: 'Connect Telegram, Slack, Discord, WhatsApp and more' },
         ].map(({ icon, color, label, body }) => (
-          <div key={label} style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 10,
-            padding: '14px 16px',
-          }}>
+          <div key={label} className="card" style={{ padding: '16px 16px' }}>
             <i className={`fa-solid ${icon}`} style={{ fontSize: 16, color, marginBottom: 10, display: 'block' }} />
             <div style={{ fontSize: 13, fontWeight: 700, color: '#dde2f0', marginBottom: 5 }}>{label}</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>{body}</div>
@@ -312,7 +280,7 @@ function Features(): React.JSX.Element {
     <div>
       {/* Dashboard */}
       <div style={sectionHeadingStyle('#818cf8')}>Dashboard</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Your mission control overview. The Dashboard shows live stats for all active agents, workshop tasks, clients, and documents. The STATUS card in the top-left houses Lyra's heartbeat — hover over the sidebar logo for a full status popover with BPM, uptime, and next-check timer.
         </p>
@@ -335,7 +303,7 @@ function Features(): React.JSX.Element {
 
       {/* Workshop */}
       <div style={sectionHeadingStyle('#f97316')}>Workshop</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           The Workshop is your task queue. Create tasks, assign them to agents, and monitor execution in real-time. Each task runs in a sandboxed agent environment and streams output back to the UI.
         </p>
@@ -361,7 +329,7 @@ function Features(): React.JSX.Element {
 
       {/* Chat */}
       <div style={sectionHeadingStyle('#a78bfa')}>Chat</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Chat directly with any of your 11 agents. Each agent has a persistent conversation history and a unique personality defined in their SOUL.md file. The chat interface streams responses in real-time.
         </p>
@@ -374,7 +342,7 @@ function Features(): React.JSX.Element {
             { icon: 'fa-rectangle-list', color: '#34d399', title: 'Prompt Templates', body: 'Save frequently-used prompts and insert them with a single click' },
             { icon: 'fa-magnifying-glass', color: '#fbbf24', title: 'In-Thread Search', body: 'Search within the current conversation to find past messages quickly' },
           ].map(({ icon, color, title, body }) => (
-            <div key={title} className="flex gap-3" style={{ background: 'rgba(255,255,255,0.025)', borderRadius: 8, padding: '12px 14px' }}>
+            <div key={title} className="card flex gap-3" style={{ padding: '12px 14px' }}>
               <i className={`fa-solid ${icon}`} style={{ fontSize: 14, color, marginTop: 2, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#dde2f0', marginBottom: 3 }}>{title}</div>
@@ -388,7 +356,7 @@ function Features(): React.JSX.Element {
 
       {/* Documents */}
       <div style={sectionHeadingStyle('#22d3ee')}>Documents &amp; Journal</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           <strong style={{ color: 'rgba(255,255,255,0.8)' }}>Documents</strong> is a persistent library for all your agent-generated and manually created content. Documents support rich text, are searchable globally, and can be linked to clients.
         </p>
@@ -399,7 +367,7 @@ function Features(): React.JSX.Element {
 
       {/* Intelligence */}
       <div style={sectionHeadingStyle('#9333ea')}>Intelligence</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Intelligence is Conductr's knowledge layer. It stores agent-generated insights, research summaries, and cross-document patterns. Lyra periodically generates new insights from your task history and documents.
         </p>
@@ -408,7 +376,7 @@ function Features(): React.JSX.Element {
 
       {/* Clients */}
       <div style={sectionHeadingStyle('#fbbf24')}>Clients</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           The Clients page manages your relationships — people, companies, or projects. Each client has a profile, associated documents, task history, and a detailed activity log. Use it to track deliverables and keep agents focused on the right context.
         </p>
@@ -435,7 +403,7 @@ function AgentSystem(): React.JSX.Element {
   return (
     <div>
       <div style={sectionHeadingStyle('#34d399')}>The SWARM OS</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Conductr ships with a fully pre-configured team of 11 specialized agents — called the <strong style={{ color: '#34d399' }}>SWARM OS</strong>.
           Each agent has a unique role, personality, and set of skills defined in their agent files. They share a live context feed of the entire Conductr system.
@@ -455,7 +423,7 @@ function AgentSystem(): React.JSX.Element {
           { tab: 'Protocol',  icon: 'fa-sitemap',  color: '#22d3ee', body: 'Visual org chart showing the full hierarchy. Configure the budget framework (daily/monthly limits), approval thresholds, and escalation rules.' },
           { tab: 'Comms',     icon: 'fa-comments', color: '#f97316', body: 'Agent communication channels — group hubs and direct secured links. Shows recent inter-agent message activity (powered by OpenClaw Channels).' },
         ].map(({ tab, icon, color, body }) => (
-          <div key={tab} className="card">
+          <div key={tab} className="card" style={{ padding: '16px 18px' }}>
             <div className="flex items-center gap-2 mb-2">
               <i className={`fa-solid ${icon}`} style={{ color, fontSize: 13 }} />
               <span style={{ fontSize: 14, fontWeight: 700, color: '#dde2f0' }}>{tab}</span>
@@ -466,7 +434,7 @@ function AgentSystem(): React.JSX.Element {
       </div>
 
       <div style={sectionHeadingStyle('#fbbf24')}>Agent Files</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={{ ...bodyStyle, marginBottom: 14 }}>
           Each agent's personality and capabilities are defined by a set of Markdown files, editable directly from the Agents page (Personnel tab → Files sub-tab). These files are injected into every chat and task system prompt.
         </p>
@@ -479,9 +447,7 @@ function AgentSystem(): React.JSX.Element {
             { file: 'HEARTBEAT.md', color: '#fbbf24', desc: 'Status, health checks, and current operational state' },
             { file: 'BOOTSTRAP.md', color: '#a78bfa', desc: 'Startup instructions and initialization procedures' },
           ].map(({ file, color, desc }) => (
-            <div key={file} className="flex items-center gap-3" style={{
-              background: 'rgba(255,255,255,0.025)', borderRadius: 8, padding: '10px 12px',
-            }}>
+            <div key={file} className="card flex items-center gap-3" style={{ padding: '10px 12px' }}>
               <code style={{ ...inlineCodeStyle, flexShrink: 0, color }}>{file}</code>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{desc}</span>
             </div>
@@ -498,7 +464,7 @@ function Advanced(): React.JSX.Element {
     <div>
       {/* Pipelines */}
       <div style={sectionHeadingStyle('#9333ea')}>Pipelines</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Pipelines let you chain multiple agents together into reusable automated workflows. Each step runs a task on a specific agent; steps can run in parallel or sequentially based on dependency rules.
         </p>
@@ -508,7 +474,7 @@ function Advanced(): React.JSX.Element {
             { tab: 'Swarm Mode',  icon: 'fa-circle-nodes',  color: '#818cf8', body: 'NL-decompose a complex goal into parallel tasks. Conductr builds the pipeline automatically and executes all steps simultaneously.' },
             { tab: 'Runs',        icon: 'fa-clock-rotate-left', color: '#22d3ee', body: 'Real-time run history. Each step shows status, agent, duration, and output preview.' },
           ].map(({ tab, icon, color, body }) => (
-            <div key={tab} style={{ background: 'rgba(255,255,255,0.025)', borderRadius: 9, padding: '14px 16px' }}>
+            <div key={tab} className="card" style={{ padding: '14px 16px' }}>
               <div className="flex items-center gap-2 mb-2">
                 <i className={`fa-solid ${icon}`} style={{ color, fontSize: 13 }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#dde2f0' }}>{tab}</span>
@@ -531,7 +497,7 @@ function Advanced(): React.JSX.Element {
 
       {/* Channels */}
       <div style={sectionHeadingStyle('#0ea5e9')}>Channels &amp; OpenClaw Gateway</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           The Channels page connects Conductr to external messaging platforms via <strong style={{ color: '#0ea5e9' }}>OpenClaw</strong> — an open-source gateway that handles WebSocket sessions, 20+ channel types, browser automation, and voice.
         </p>
@@ -553,7 +519,7 @@ function Advanced(): React.JSX.Element {
             { tab: 'Channels', icon: 'fa-plug',       color: '#38bdf8', body: 'Add and configure messaging channels. Assign each to a routing agent (Courier by default).' },
             { tab: 'Skills',   icon: 'fa-toolbox',    color: '#7dd3fc', body: 'Browse and install ClawHub skills — pre-built tool integrations for your agents.' },
           ].map(({ tab, icon, color, body }) => (
-            <div key={tab} style={{ background: 'rgba(255,255,255,0.025)', borderRadius: 9, padding: '12px 14px' }}>
+            <div key={tab} className="card" style={{ padding: '12px 14px' }}>
               <div className="flex items-center gap-2 mb-2">
                 <i className={`fa-solid ${icon}`} style={{ color, fontSize: 12 }} />
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: '#dde2f0' }}>{tab}</span>
@@ -566,7 +532,7 @@ function Advanced(): React.JSX.Element {
 
       {/* Blueprint */}
       <div style={sectionHeadingStyle('#ec4899')}>Storyboard (Blueprint)</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           The Storyboard renders the live project roadmap pulled directly from <code style={inlineCodeStyle}>docs/roadmap.md</code>. Browse completed and planned phases, track progress bars, and explore Lyra's pinned ideas in the Ideas tab.
         </p>
@@ -577,16 +543,16 @@ function Advanced(): React.JSX.Element {
 
       {/* Network */}
       <div style={sectionHeadingStyle('#f43f5e')}>Network — LAN &amp; Tailscale</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Conductr supports peer-to-peer LAN sharing and Tailscale mesh networking. Host mode exposes a local API on port 9876 that other Conductr instances can connect to.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
           {[
-            { title: 'Host Mode', body: 'Enable from Settings → Network. Generates a 6-digit pairing code. Other clients connect using your LAN IP + code.' },
-            { title: 'Tailscale', body: 'Detects installed Tailscale automatically. Lists peers and enables secure cross-network connections without port forwarding.' },
-          ].map(({ title, body }) => (
-            <div key={title} style={{ background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.18)', borderRadius: 9, padding: '12px 14px' }}>
+            { title: 'Host Mode', color: '#f43f5e', body: 'Enable from Settings → Network. Generates a 6-digit pairing code. Other clients connect using your LAN IP + code.' },
+            { title: 'Tailscale', color: '#f43f5e', body: 'Detects installed Tailscale automatically. Lists peers and enables secure cross-network connections without port forwarding.' },
+          ].map(({ title, color, body }) => (
+            <div key={title} className="card" style={{ borderLeft: `3px solid ${color}`, padding: '12px 14px' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#fda4af', marginBottom: 6 }}>{title}</div>
               <div style={{ ...bodyStyle, fontSize: 12.5 }}>{body}</div>
             </div>
@@ -596,7 +562,7 @@ function Advanced(): React.JSX.Element {
 
       {/* Providers */}
       <div style={sectionHeadingStyle('#f97316')}>Providers <Badge label="API KEY MODE ONLY" color="#f97316" /></div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           In API Key mode, Conductr supports multiple LLM providers beyond Anthropic. Configure provider keys, test connections, and pull Ollama models locally.
         </p>
@@ -621,7 +587,7 @@ function Reference(): React.JSX.Element {
   return (
     <div>
       <div style={sectionHeadingStyle('#fbbf24')}>Global Keyboard Shortcuts</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <ShortcutRow keys={['⌘', 'K']}        action="Open Command Palette" />
         <ShortcutRow keys={['⌘', '⇧', 'F']}   action="Open Global Search" />
         <ShortcutRow keys={['⌘', '/']}         action="Open Shortcut Sheet" />
@@ -630,13 +596,13 @@ function Reference(): React.JSX.Element {
       </div>
 
       <div style={sectionHeadingStyle('#818cf8')}>Workshop Shortcuts</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <ShortcutRow keys={['N']}             action="New Task (when no input focused)" />
         <ShortcutRow keys={['Esc']}           action="Close modal / dismiss overlay" />
       </div>
 
       <div style={sectionHeadingStyle('#22d3ee')}>Chat Shortcuts</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <ShortcutRow keys={['Enter']}         action="Send message" />
         <ShortcutRow keys={['⇧', 'Enter']}    action="New line in message" />
         <ShortcutRow keys={['@']}             action="Trigger agent @-mention picker" />
@@ -651,7 +617,7 @@ function Reference(): React.JSX.Element {
           { section: 'Notifications', icon: 'fa-bell',     color: '#fbbf24', items: ['Global notification mode', 'Per-event toggle (task complete, failed, etc.)'] },
           { section: 'About',       icon: 'fa-circle-info', color: '#22d3ee', items: ['App version + build info', 'Model and stack info', 'Reset / export options'] },
         ].map(({ section, icon, color, items }) => (
-          <div key={section} className="card">
+          <div key={section} className="card" style={{ padding: '16px 18px' }}>
             <div className="flex items-center gap-2 mb-3">
               <i className={`fa-solid ${icon}`} style={{ color, fontSize: 13 }} />
               <span style={{ fontSize: 14, fontWeight: 700, color: '#dde2f0' }}>Settings → {section}</span>
@@ -664,7 +630,7 @@ function Reference(): React.JSX.Element {
       </div>
 
       <div style={sectionHeadingStyle('#a78bfa')}>Tips &amp; Tricks</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         {[
           { icon: 'fa-bolt',             color: '#fbbf24', tip: 'Hover the Conductr logo in the sidebar to see Lyra\'s live heartbeat — BPM, active task count, and next-check timer.' },
           { icon: 'fa-keyboard',         color: '#818cf8', tip: 'Press ⌘/ anywhere to open the shortcut cheat sheet — all keybindings visible at a glance.' },
@@ -687,7 +653,7 @@ function Reference(): React.JSX.Element {
       </div>
 
       <div style={sectionHeadingStyle('#f43f5e')}>Phase Roadmap</div>
-      <div className="card mb-4">
+      <div className="card mb-4" style={{ padding: '20px 24px' }}>
         <p style={bodyStyle}>
           Conductr is developed in phases, each adding a major capability. The full roadmap is always visible in the <strong style={{ color: 'rgba(255,255,255,0.8)' }}>Storyboard</strong> page (Phases tab), which renders <code style={inlineCodeStyle}>docs/roadmap.md</code> live.
         </p>
@@ -738,12 +704,7 @@ export default function Guide(): React.JSX.Element {
       </div>
 
       {/* Tab bar */}
-      <div className="flex-shrink-0 flex items-center gap-1 mb-6" style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 12,
-        padding: '5px 6px',
-      }}>
+      <div className="card flex-shrink-0 flex items-center gap-1 mb-6" style={{ padding: '5px 6px' }}>
         {TABS.map((tab) => {
           const isActive = tab.id === activeTab
           return (
